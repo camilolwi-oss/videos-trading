@@ -47,3 +47,15 @@ npx remotion render escena-rango out/rango.mp4
 - `src/theme.ts` — colores y tipografías (negro + dorado, como el PDF).
 
 Fuente: Inter (SIL Open Font License, ver `public/fonts/OFL.txt`).
+
+## Reels verticales (Instagram)
+
+Serie de 10 reels en 1080×1920 con la voz grabada. Cada reel vive en `src/reels/reelNN/` y su audio en `public/audio/reel-NN.m4a`.
+
+- `src/reels/ReelFrame.tsx` — layout vertical con zonas seguras (título fijo 220–520 px, visual 540–1260 px, subtítulos 1280–1480 px, sin texto en los 120 px de la derecha).
+- `src/reels/Subtitles.tsx` — subtítulos por frase; las palabras entre `*asteriscos*` salen en dorado. Para corregir un subtítulo, editá el array `pages` del reel.
+
+```bash
+npx remotion render Reel01 out/reels/reel-01.mp4
+npx remotion still Reel01-portada out/reels/reel-01-portada.png
+```
