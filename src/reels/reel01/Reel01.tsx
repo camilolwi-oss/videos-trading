@@ -9,30 +9,29 @@ import {ReelFrame, ZONE} from '../ReelFrame';
 import {Page, Subtitles} from '../Subtitles';
 
 // Timings (seconds) come from the voice track public/audio/reel-01.m4a.
-export const REEL01_SECONDS = 63.5;
+export const REEL01_SECONDS = 49;
 
 const pages: Page[] = [
-  {from: 2.08, to: 4.45, text: 'Si mirás un gráfico y solo ves *velas*,'},
-  {from: 4.45, to: 6.81, text: 'te estás perdiendo lo más *importante*.'},
-  {from: 7.64, to: 10.11, text: 'El mercado es simplemente esto:'},
-  {from: 10.42, to: 14.75, text: '*Compradores* y *vendedores* interactuando todo el tiempo.'},
-  {from: 15.18, to: 18.06, text: 'El precio se mueve cuando uno de esos dos lados'},
-  {from: 18.48, to: 20.54, text: 'actúa con más *agresividad*.'},
-  {from: 21.64, to: 24.3, text: 'Si los compradores pagan cada vez más caro,'},
-  {from: 24.3, to: 25.42, text: 'el precio *sube*.'},
-  {from: 25.98, to: 28.0, text: 'Si los vendedores fueran a ser'},
-  {from: 28.64, to: 31.09, text: 'más agresivos, el precio va a *bajar*.'},
-  {from: 31.46, to: 32.85, text: 'Y nadie tiene ventaja:'},
-  {from: 33.33, to: 35.97, text: 'el precio *rota* sin dirección.'},
-  {from: 37.55, to: 40.36, text: 'Por eso, antes de ponerle una etiqueta al gráfico,'},
-  {from: 40.5, to: 42.1, text: 'preguntate *tres cosas*.'},
-  {from: 42.35, to: 45.25, text: '¿El movimiento es *limpio* o *trabajoso*?'},
-  {from: 45.91, to: 47.72, text: '¿Algún lado mantiene el *control*?'},
-  {from: 48.11, to: 50.25, text: '¿El precio está siendo *aceptado*'},
-  {from: 50.25, to: 52.38, text: 'en una zona nueva, o *rechazado*?'},
-  // 52.8–56.9 is shown as the big statement in the visual zone instead of a subtitle.
-  {from: 57.62, to: 59.9, text: 'Seguí la serie de comportamientos'},
-  {from: 59.9, to: 61.27, text: 'y aprendé a *leerla*.'},
+  {from: 0.98, to: 2.9, text: 'Si mirás un gráfico y solo ves *velas*,'},
+  {from: 2.9, to: 4.61, text: 'te estás perdiendo lo más *importante*,'},
+  {from: 4.79, to: 6.15, text: 'porque el mercado se mueve'},
+  {from: 6.42, to: 9.51, text: 'con *compradores* y *vendedores* interactuando todo el tiempo.'},
+  {from: 9.84, to: 12.3, text: 'El precio se mueve cuando uno de esos dos lados'},
+  {from: 12.3, to: 14.4, text: 'actúa con más *agresividad* que el otro.'},
+  {from: 14.54, to: 16.68, text: 'Si los compradores pagan cada vez más caro,'},
+  {from: 16.68, to: 17.78, text: 'el precio va a *subir*.'},
+  {from: 17.93, to: 19.29, text: 'Si los vendedores se vuelven'},
+  {from: 19.45, to: 21.1, text: 'más agresivos, el precio va a *bajar*.'},
+  {from: 21.22, to: 22.75, text: 'Y si nadie tiene ventaja,'},
+  {from: 22.75, to: 25.13, text: 'el precio se va a mover *sin dirección*.'},
+  {from: 25.29, to: 28.36, text: 'Por eso, antes de ponerle una etiqueta al gráfico,'},
+  {from: 28.49, to: 30.29, text: 'preguntate estas *tres cosas*.'},
+  {from: 30.43, to: 32.66, text: '¿El movimiento es *limpio* o *trabajoso*?'},
+  {from: 32.85, to: 34.78, text: '¿Algún lado mantiene el *control*?'},
+  {from: 34.93, to: 36.46, text: '¿El precio está siendo *aceptado*'},
+  {from: 36.62, to: 38.52, text: 'en una zona nueva, o *rechazándolo*?'},
+  // 38.65–44.41 is shown as the big statement in the visual zone instead of a subtitle.
+  {from: 44.68, to: 46.71, text: 'Seguí la serie y aprendé a *leerla*.'},
 ];
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
@@ -54,37 +53,37 @@ const candles = buildCandles(
 // sellers (baja) and balance (rota).
 const phases: Phase[] = [
   {
-    from: 7.7, to: 21.5, pressure: 0,
-    candles: [[0, 2, -1, 1], [1, 2, -1, 0], [0, 1, -2, -1], [-1, 1, -2, 1], [1, 3, 0, 2], [2, 2, -1, 0], [0, 2, -1, 1], [1, 1, -1, 0]],
+    from: 4.9, to: 14.45, pressure: 0,
+    candles: [[0, 2, -1, 1], [1, 2, -1, 0], [0, 1, -2, -1], [-1, 1, -2, 1], [1, 3, 0, 2], [2, 2, -1, 0], [0, 1, -1, 0]],
   },
-  {from: 21.6, to: 25.5, pressure: 0.85, candles: [[0, 5, 0, 4], [4, 8, 3, 7], [7, 11, 6, 10]]},
-  {from: 25.9, to: 31.3, pressure: -0.85, candles: [[10, 11, 6, 7], [7, 8, 2, 3], [3, 4, -1, 0], [0, 0, -4, -3]]},
-  {from: 31.4, to: 36.4, pressure: 0, candles: [[-3, 0, -4, -1], [-1, -1, -4, -3], [-3, 0, -3, -1], [-1, 0, -3, -2]]},
+  {from: 14.55, to: 17.85, pressure: 0.85, candles: [[0, 5, 0, 4], [4, 8, 3, 7], [7, 11, 6, 10]]},
+  {from: 17.93, to: 21.15, pressure: -0.85, candles: [[10, 11, 6, 7], [7, 8, 2, 3], [3, 4, -1, 0], [0, 0, -4, -3]]},
+  {from: 21.22, to: 25.2, pressure: 0, candles: [[-3, 0, -4, -1], [-1, -1, -4, -3], [-3, 0, -3, -1], [-1, 0, -3, -2]]},
 ];
 
 const pressure = (t: number) => {
-  const base = interpolate(t, [7.5, 21.3, 21.9, 25.3, 26.0, 30.9, 31.6, 40], [0, 0, 1, 1, -1, -1, 0, 0], clamp);
-  const interact = Math.sin(t * 6.5) * interpolate(t, [7.6, 9, 15, 16.5, 20.8, 21.4], [0, 0.25, 0.25, 0.6, 0.6, 0], clamp);
-  const rotate = Math.sin(t * 4.2) * 0.85 * interpolate(t, [31.4, 32.2], [0, 1], clamp);
+  const base = interpolate(t, [4.8, 14.3, 14.8, 17.6, 18.2, 20.9, 21.5, 30], [0, 0, 1, 1, -1, -1, 0, 0], clamp);
+  const interact = Math.sin(t * 6.5) * interpolate(t, [4.9, 6, 9.8, 10.6, 13.9, 14.4], [0, 0.25, 0.25, 0.6, 0.6, 0], clamp);
+  const rotate = Math.sin(t * 4.2) * 0.85 * interpolate(t, [21.3, 22.0], [0, 1], clamp);
   return Math.max(-1, Math.min(1, base + interact + rotate));
 };
 
 const states = [
-  {word: 'SUBE', color: C.green, from: 21.64, to: 25.6},
-  {word: 'BAJA', color: C.red, from: 25.98, to: 31.3},
-  {word: 'ROTA', color: C.gold, from: 31.46, to: 36.2},
+  {word: 'SUBE', color: C.green, from: 14.54, to: 17.8},
+  {word: 'BAJA', color: C.red, from: 17.93, to: 21.1},
+  {word: 'ROTA', color: C.gold, from: 21.22, to: 25.1},
 ];
 
 // --- Questions section -------------------------------------------------------
 const labels = ['ALCISTA', 'BAJISTA', 'RANGO', 'TENDENCIA'];
 const questions = [
-  {q: '¿El movimiento es limpio o trabajoso?', from: 42.35, to: 45.6},
-  {q: '¿Algún lado mantiene el control?', from: 45.91, to: 48.0},
-  {q: '¿El precio está siendo aceptado en una zona nueva, o rechazado?', from: 48.11, to: 52.6},
+  {q: '¿El movimiento es limpio o trabajoso?', from: 30.43, to: 32.75},
+  {q: '¿Algún lado mantiene el control?', from: 32.85, to: 34.85},
+  {q: '¿El precio está siendo aceptado en una zona nueva, o rechazado?', from: 34.93, to: 38.6},
 ];
 
 const QuestionsSection: React.FC<{t: number}> = ({t}) => {
-  const strike = interpolate(t, [40.4, 41.0], [0, 1], clamp);
+  const strike = interpolate(t, [28.5, 29.1], [0, 1], clamp);
   return (
     <>
       <div style={{position: 'absolute', left: ZONE.left, width: 880, top: 580}}>
@@ -93,7 +92,7 @@ const QuestionsSection: React.FC<{t: number}> = ({t}) => {
         </Kicker>
         <div style={{display: 'flex', gap: 14, marginTop: 18}}>
           {labels.map((l, i) => {
-            const o = interpolate(t, [37.6 + i * 0.35, 37.9 + i * 0.35], [0, 1], clamp);
+            const o = interpolate(t, [25.5 + i * 0.3, 25.8 + i * 0.3], [0, 1], clamp);
             return (
               <div
                 key={l}
@@ -168,19 +167,23 @@ const QuestionsSection: React.FC<{t: number}> = ({t}) => {
 
 // --- Statement + outro -------------------------------------------------------
 const Statement: React.FC<{t: number}> = ({t}) => {
-  const a = interpolate(t, [52.8, 53.2], [0, 1], clamp);
-  const b = interpolate(t, [55.1, 55.5], [0, 1], clamp);
+  const a = interpolate(t, [38.65, 39.05], [0, 1], clamp);
+  const b = interpolate(t, [41.37, 41.77], [0, 1], clamp);
+  const c = interpolate(t, [43.29, 43.69], [0, 1], clamp);
   return (
     <>
       <div style={{position: 'absolute', left: ZONE.left, top: 600}}>
         <CandleChart candles={candles} width={960} height={620} shown={candles.length} opacity={0.14} showGrid={false} />
       </div>
-      <div style={{position: 'absolute', left: ZONE.left, right: 140, top: 700, fontFamily: DISPLAY, fontWeight: 800, letterSpacing: '-0.015em'}}>
-        <div style={{fontSize: 96, lineHeight: 1.05, opacity: a, transform: `translateY(${(1 - a) * 30}px)`}}>
-          El gráfico no imprime velas.
+      <div style={{position: 'absolute', left: ZONE.left, right: 140, top: 640, fontFamily: DISPLAY, fontWeight: 800, letterSpacing: '-0.015em'}}>
+        <div style={{fontSize: 84, lineHeight: 1.05, opacity: a, transform: `translateY(${(1 - a) * 30}px)`}}>
+          El gráfico, como tal, no imprime velas.
         </div>
-        <div style={{fontSize: 110, lineHeight: 1.05, marginTop: 40, color: C.gold, opacity: b, transform: `translateY(${(1 - b) * 30}px)`}}>
-          Muestra la presión.
+        <div style={{fontSize: 92, lineHeight: 1.05, marginTop: 36, color: C.gold, opacity: b, transform: `translateY(${(1 - b) * 30}px)`}}>
+          Muestra la fuerza y la presión
+        </div>
+        <div style={{fontSize: 92, lineHeight: 1.05, color: C.gold, opacity: c, transform: `translateY(${(1 - c) * 30}px)`}}>
+          en tiempo real.
         </div>
       </div>
     </>
@@ -188,13 +191,13 @@ const Statement: React.FC<{t: number}> = ({t}) => {
 };
 
 const Outro: React.FC<{t: number}> = ({t}) => {
-  const a = interpolate(t, [57.5, 58.0], [0, 1], clamp);
+  const a = interpolate(t, [44.5, 45.0], [0, 1], clamp);
   return (
     <div style={{position: 'absolute', left: ZONE.left, width: 880, top: 640, opacity: a}}>
       <Kicker size={28}>Seguí la serie</Kicker>
       <div style={{display: 'flex', gap: 12, marginTop: 34}}>
         {new Array(10).fill(0).map((_, i) => {
-          const fill = interpolate(t, [58.0 + i * 0.12, 58.3 + i * 0.12], [0, 1], clamp);
+          const fill = interpolate(t, [45.0 + i * 0.12, 45.3 + i * 0.12], [0, 1], clamp);
           return (
             <div
               key={i}
@@ -226,12 +229,12 @@ export const Reel01: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const t = frame / fps;
-  const shown = interpolate(t, [0.2, 6.6], [0, candles.length], clamp);
-  const oCandles = interpolate(t, [7.0, 7.7], [1, 0], clamp);
-  const oPressure = win(t, 7.7, 36.4, 0.5);
-  const oQuestions = win(t, 37.3, 52.5, 0.4);
-  const oStatement = win(t, 52.9, 57.2, 0.4);
-  const oOutro = interpolate(t, [57.4, 57.9], [0, 1], clamp);
+  const shown = interpolate(t, [0.1, 4.4], [0, candles.length], clamp);
+  const oCandles = interpolate(t, [4.5, 5.0], [1, 0], clamp);
+  const oPressure = win(t, 5.0, 25.2, 0.35);
+  const oQuestions = win(t, 25.45, 38.55, 0.35);
+  const oStatement = win(t, 38.85, 44.4, 0.3);
+  const oOutro = interpolate(t, [44.45, 44.9], [0, 1], clamp);
 
   return (
     <ReelFrame num={1} title="El gráfico no imprime velas">
