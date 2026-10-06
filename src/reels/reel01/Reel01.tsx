@@ -1,9 +1,10 @@
 import React from 'react';
-import {Audio, interpolate, random, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {buildCandles} from '../../candles';
 import {CandleChart} from '../../components/CandleChart';
 import {Kicker} from '../../components/ui';
-import {C, DISPLAY, FPS} from '../../theme';
+import {C, DISPLAY} from '../../theme';
+import {OrderflowSection, Phase} from '../components/Orderflow';
 import {ReelFrame, ZONE} from '../ReelFrame';
 import {Page, Subtitles} from '../Subtitles';
 
@@ -48,87 +49,31 @@ const candles = buildCandles(
   0.4,
 );
 
-// --- Pressure section --------------------------------------------------------
-const P_START = 7.5;
-const P_END = 36.5;
+// --- Orderflow section: footprint candles + vertical order book ---------------
+// Price levels are ticks; phases follow the voice: interaction, buyers (sube),
+// sellers (baja) and balance (rota).
+const phases: Phase[] = [
+  {
+    from: 7.7, to: 21.5, pressure: 0,
+    candles: [[0, 2, -1, 1], [1, 2, -1, 0], [0, 1, -2, -1], [-1, 1, -2, 1], [1, 3, 0, 2], [2, 2, -1, 0], [0, 2, -1, 1], [1, 1, -1, 0]],
+  },
+  {from: 21.6, to: 25.5, pressure: 0.85, candles: [[0, 5, 0, 4], [4, 8, 3, 7], [7, 11, 6, 10]]},
+  {from: 25.9, to: 31.3, pressure: -0.85, candles: [[10, 11, 6, 7], [7, 8, 2, 3], [3, 4, -1, 0], [0, 0, -4, -3]]},
+  {from: 31.4, to: 36.4, pressure: 0, candles: [[-3, 0, -4, -1], [-1, -1, -4, -3], [-3, 0, -3, -1], [-1, 0, -3, -2]]},
+];
 
 const pressure = (t: number) => {
-  const base = interpolate(t, [P_START, 21.3, 21.9, 25.3, 26.0, 30.9, 31.6, 40], [0, 0, 1, 1, -1, -1, 0, 0], clamp);
+  const base = interpolate(t, [7.5, 21.3, 21.9, 25.3, 26.0, 30.9, 31.6, 40], [0, 0, 1, 1, -1, -1, 0, 0], clamp);
   const interact = Math.sin(t * 6.5) * interpolate(t, [7.6, 9, 15, 16.5, 20.8, 21.4], [0, 0.25, 0.25, 0.6, 0.6, 0], clamp);
   const rotate = Math.sin(t * 4.2) * 0.85 * interpolate(t, [31.4, 32.2], [0, 1], clamp);
   return Math.max(-1, Math.min(1, base + interact + rotate));
 };
 
-const series: number[] = [];
-{
-  let v = 0;
-  for (let f = 0; f <= Math.ceil(P_END * FPS); f++) {
-    const t = f / FPS;
-    if (t >= P_START) v += pressure(t) * 1.1 + (random(`r01-${f}`) - 0.5) * 3.2;
-    series.push(v);
-  }
-}
-
-const PressureSection: React.FC<{t: number}> = ({t}) => {
-  const ch = {x: ZONE.left, y: 650, w: 880, h: 360, lo: -110, hi: 150};
-  const now = Math.min(Math.max(t, P_START), P_END);
-  const px = (tt: number) => ch.x + ((tt - P_START) / (P_END - P_START)) * ch.w;
-  const py = (v: number) => ch.y + ((ch.hi - v) / (ch.hi - ch.lo)) * ch.h;
-  let d = '';
-  const f0 = Math.round(P_START * FPS);
-  const f1 = Math.round(now * FPS);
-  for (let f = f0; f <= f1; f++) {
-    d += `${f === f0 ? 'M' : 'L'} ${px(f / FPS).toFixed(1)} ${py(series[f]).toFixed(1)} `;
-  }
-  const p = pressure(t);
-  const buy = (1 + p) / 2;
-  const head = p > 0.3 ? C.green : p < -0.3 ? C.red : C.gold;
-  const states = [
-    {word: 'SUBE', color: C.green, o: win(t, 21.64, 25.6, 0.25)},
-    {word: 'BAJA', color: C.red, o: win(t, 25.98, 31.3, 0.25)},
-    {word: 'ROTA', color: C.gold, o: win(t, 31.46, 36.2, 0.25)},
-  ];
-  return (
-    <>
-      <svg width={1080} height={1920} style={{position: 'absolute'}}>
-        <line x1={ch.x} x2={ch.x + ch.w} y1={py(0)} y2={py(0)} stroke={C.line} strokeDasharray="8 10" strokeWidth={2} />
-        <path d={d} fill="none" stroke={C.white} strokeWidth={5} strokeLinejoin="round" />
-        <circle cx={px(now)} cy={py(series[f1])} r={28} fill={head} opacity={0.25} />
-        <circle cx={px(now)} cy={py(series[f1])} r={13} fill={head} />
-      </svg>
-      {states.map((s) => (
-        <div
-          key={s.word}
-          style={{
-            position: 'absolute',
-            left: ZONE.left,
-            top: 575,
-            fontFamily: DISPLAY,
-            fontWeight: 800,
-            fontSize: 76,
-            letterSpacing: '0.04em',
-            color: s.color,
-            opacity: s.o,
-            transform: `scale(${0.9 + s.o * 0.1})`,
-            transformOrigin: 'left center',
-          }}
-        >
-          {s.word}
-        </div>
-      ))}
-      <div style={{position: 'absolute', left: ZONE.left, width: 880, top: 1080}}>
-        <div style={{display: 'flex', justifyContent: 'space-between', fontSize: 28, fontWeight: 600, letterSpacing: '0.12em', marginBottom: 16}}>
-          <span style={{color: C.green}}>COMPRADORES {Math.round(buy * 100)}%</span>
-          <span style={{color: C.red}}>{Math.round((1 - buy) * 100)}% VENDEDORES</span>
-        </div>
-        <div style={{position: 'relative', height: 36, borderRadius: 18, overflow: 'hidden', background: C.red}}>
-          <div style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: `${buy * 100}%`, background: C.green}} />
-          <div style={{position: 'absolute', left: '50%', top: -4, bottom: -4, width: 4, background: C.bg}} />
-        </div>
-      </div>
-    </>
-  );
-};
+const states = [
+  {word: 'SUBE', color: C.green, from: 21.64, to: 25.6},
+  {word: 'BAJA', color: C.red, from: 25.98, to: 31.3},
+  {word: 'ROTA', color: C.gold, from: 31.46, to: 36.2},
+];
 
 // --- Questions section -------------------------------------------------------
 const labels = ['ALCISTA', 'BAJISTA', 'RANGO', 'TENDENCIA'];
@@ -298,7 +243,7 @@ export const Reel01: React.FC = () => {
       ) : null}
       {oPressure > 0 ? (
         <div style={{position: 'absolute', inset: 0, opacity: oPressure}}>
-          <PressureSection t={t} />
+          <OrderflowSection t={t} phases={phases} pressure={pressure} levels={[-5, 12]} top={612} states={states} />
         </div>
       ) : null}
       {oQuestions > 0 ? (
