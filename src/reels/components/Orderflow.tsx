@@ -10,11 +10,14 @@ export type Phase = {from: number; to: number; pressure: number; candles: [numbe
 
 type Sched = {start: number; end: number; o: number; h: number; l: number; c: number; pressure: number; idx: number};
 
+// Gold outline + tag on one candle's body or wicks, between two times (seconds).
+export type Highlight = {from: number; to: number; idx: number; kind: 'body' | 'wick'; label: string};
+
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
 const TICK = 0.25;
 const BASE_PRICE = 100;
-const ROW_H = 34;
+const DEFAULT_ROW_H = 34;
 const COLS = 6;
 const COL_W = 106;
 const CHART_X = ZONE.left;
@@ -36,10 +39,14 @@ const buildSchedule = (phases: Phase[]): Sched[] => {
 };
 
 // Bid (sold at bid) / ask (bought at ask) volume per level of a candle.
-const volumes = (cd: Sched, level: number) => {
+const volumes = (cd: Sched, level: number, wickPressure: boolean) => {
   const base = 8 + Math.floor(random(`fp-${cd.idx}-${level}-b`) * 42);
   const skew = (random(`fp-${cd.idx}-${level}-s`) - 0.5) * 0.36;
-  const share = Math.max(0.08, Math.min(0.92, 0.5 + 0.32 * cd.pressure + skew));
+  // In a wick the other side pushed back: sellers at the top, buyers at the bottom.
+  let pr = cd.pressure;
+  if (wickPressure && level > Math.max(cd.o, cd.c)) pr = -0.9;
+  if (wickPressure && level < Math.min(cd.o, cd.c)) pr = 0.9;
+  const share = Math.max(0.08, Math.min(0.92, 0.5 + 0.32 * pr + skew));
   return {bid: Math.round(base * 2 * (1 - share)), ask: Math.round(base * 2 * share)};
 };
 
@@ -71,7 +78,13 @@ export const OrderflowSection: React.FC<{
   levels: [number, number]; // [lowest, highest] tick level drawn
   top: number;
   states: {word: string; color: string; from: number; to: number}[];
-}> = ({t, phases, pressure, levels, top, states}) => {
+  rowH?: number;
+  wickPressure?: boolean;
+  highlights?: Highlight[];
+  // 'overlay' draws the state word over the chart; 'header' puts it on the header row.
+  statePlacement?: 'overlay' | 'header';
+}> = ({t, phases, pressure, levels, top, states, rowH = DEFAULT_ROW_H, wickPressure = false, highlights = [], statePlacement = 'overlay'}) => {
+  const ROW_H = rowH;
   const sched = React.useMemo(() => buildSchedule(phases), [phases]);
   const [lMin, lMax] = levels;
   const rows = lMax - lMin + 1;
@@ -140,7 +153,7 @@ export const OrderflowSection: React.FC<{
             let poc = lvLo;
             let pocVol = -1;
             for (let lv = lvLo; lv <= lvHi; lv++) {
-              const v = volumes(cd, lv);
+              const v = volumes(cd, lv, wickPressure);
               if (v.bid + v.ask > pocVol) {
                 pocVol = v.bid + v.ask;
                 poc = lv;
@@ -198,6 +211,55 @@ export const OrderflowSection: React.FC<{
           />
         ) : null}
 
+        {/* highlights on a candle's body or wicks */}
+        {highlights.map((hl, k) => {
+          const cd = sched[hl.idx];
+          if (!cd || hl.idx > cur) return null;
+          const o = interpolate(t, [hl.from - 0.2, hl.from + 0.15, hl.to - 0.15, hl.to + 0.2], [0, 1, 1, 0], clamp);
+          if (o <= 0) return null;
+          const x = colX(hl.idx);
+          if (x < CHART_X - 4 || x > CHART_X + CHART_W) return null;
+          const done = hl.idx < cur || liveP >= 1;
+          const w = done ? {price: cd.c, lo: cd.l, hi: cd.h} : walk(cd, liveP);
+          const bTop = Math.max(cd.o, w.price);
+          const bBot = Math.min(cd.o, w.price);
+          const pad = 6;
+          const boxes: {y0: number; y1: number}[] = [];
+          if (hl.kind === 'body') {
+            boxes.push({y0: y(bTop) - ROW_H / 2, y1: y(bBot) + ROW_H / 2});
+          } else {
+            if (w.hi > bTop + 0.5) boxes.push({y0: y(w.hi) - ROW_H / 2, y1: y(bTop) - ROW_H / 2 + 4});
+            if (w.lo < bBot - 0.5) boxes.push({y0: y(bBot) + ROW_H / 2 - 4, y1: y(w.lo) + ROW_H / 2});
+          }
+          const above = y(w.hi) - ROW_H / 2 - 30;
+          // Keep the tag clear of the state pill in the top-left corner.
+          const tagY = above > top + (statePlacement === 'overlay' ? 110 : 20) ? above : y(w.lo) + ROW_H / 2 + 34;
+          const tagW = hl.label.length * 13.5 + 28;
+          const tagX = Math.max(CHART_X + tagW / 2, Math.min(CHART_X + CHART_W - tagW / 2, x + COL_W / 2));
+          const pulse = 1 + 0.06 * Math.sin(t * 8);
+          return (
+            <g key={k} opacity={o}>
+              {boxes.map((b, j) => (
+                <rect
+                  key={j}
+                  x={x - pad + 2}
+                  y={b.y0 - pad}
+                  width={COL_W - 2 * pad + 8}
+                  height={Math.max(12, b.y1 - b.y0) + pad * 2}
+                  rx={8}
+                  fill="rgba(227,168,43,0.10)"
+                  stroke={C.gold}
+                  strokeWidth={4 * pulse}
+                />
+              ))}
+              <rect x={tagX - tagW / 2} y={tagY - 22} width={tagW} height={40} rx={20} fill={C.gold} />
+              <text x={tagX} y={tagY + 6} textAnchor="middle" fontSize={22} fontWeight={700} fill={C.bg} fontFamily={DISPLAY}>
+                {hl.label}
+              </text>
+            </g>
+          );
+        })}
+
         {/* vertical pressure bar: red (sellers) from the top, green (buyers) from the bottom */}
         <rect x={BOOK_X - 22} y={top} width={10} height={bottom - top} rx={5} fill={C.red} />
         <rect x={BOOK_X - 22} y={top + (bottom - top) * (1 - buyShare)} width={10} height={(bottom - top) * buyShare} rx={5} fill={C.green} />
@@ -246,7 +308,28 @@ export const OrderflowSection: React.FC<{
           );
         })}
       </svg>
-      {state ? (
+      {state && statePlacement === 'header' ? (
+        <div
+          style={{
+            position: 'absolute',
+            right: 1080 - (CHART_X + CHART_W),
+            top: top - 66,
+            fontFamily: DISPLAY,
+            fontWeight: 800,
+            fontSize: 38,
+            letterSpacing: '0.06em',
+            color: state.color,
+            opacity: stateO,
+            background: 'rgba(10,10,11,0.9)',
+            border: `2px solid ${state.color}`,
+            borderRadius: 12,
+            padding: '0 16px 2px',
+          }}
+        >
+          {state.word}
+        </div>
+      ) : null}
+      {state && statePlacement === 'overlay' ? (
         <div
           style={{
             position: 'absolute',
