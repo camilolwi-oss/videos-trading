@@ -6,7 +6,8 @@ import {ZONE} from '../ReelFrame';
 // Footprint candles (left) + vertical order book (right) sharing one price ladder.
 // Everything is driven by a candle schedule in seconds of the voice track.
 
-export type Phase = {from: number; to: number; pressure: number; candles: [number, number, number, number][]};
+// autoPressure: each candle's footprint follows its own direction instead of the phase pressure.
+export type Phase = {from: number; to: number; pressure: number; candles: [number, number, number, number][]; autoPressure?: boolean};
 
 type Sched = {start: number; end: number; o: number; h: number; l: number; c: number; pressure: number; idx: number};
 
@@ -32,7 +33,8 @@ const buildSchedule = (phases: Phase[]): Sched[] => {
   for (const ph of phases) {
     const d = (ph.to - ph.from) / ph.candles.length;
     ph.candles.forEach(([o, h, l, c], k) => {
-      out.push({start: ph.from + k * d, end: ph.from + (k + 1) * d, o, h, l, c, pressure: ph.pressure, idx: out.length});
+      const pr = ph.autoPressure ? Math.max(-1, Math.min(1, (c - o) / 3)) * 0.9 : ph.pressure;
+      out.push({start: ph.from + k * d, end: ph.from + (k + 1) * d, o, h, l, c, pressure: pr, idx: out.length});
     });
   }
   return out;
@@ -69,6 +71,22 @@ const walk = (cd: Sched, p: number) => {
     hi = Math.max(hi, pts[i + 1]);
   }
   return {price, lo: Math.min(lo, price), hi: Math.max(hi, price)};
+};
+
+// Buy/sell pressure read from the candles themselves: how far the live price
+// sits from the previous candle's open, in ticks (continuous across candles).
+export const livePressure = (phases: Phase[], t: number) => {
+  const sched = buildSchedule(phases);
+  let cur = -1;
+  sched.forEach((cd, i) => {
+    if (t >= cd.start) cur = i;
+  });
+  if (cur < 0) return 0;
+  const cd = sched[cur];
+  const p = interpolate(t, [cd.start, cd.end], [0, 1], clamp);
+  const price = walk(cd, p).price;
+  const ref = cur > 0 ? sched[cur - 1].o : cd.o;
+  return Math.max(-1, Math.min(1, (price - ref) / 4));
 };
 
 export const OrderflowSection: React.FC<{

@@ -28,15 +28,19 @@ export const ReelFrame: React.FC<{
   num: number;
   title: string;
   children: React.ReactNode;
-}> = ({num, title, children}) => {
+  // Narrower title block, e.g. to leave room for the face cam on the right.
+  titleRight?: number;
+  titleSize?: number;
+  kickerSize?: number;
+}> = ({num, title, children, titleRight = 140, titleSize = 84, kickerSize = 28}) => {
   const frame = useCurrentFrame();
   const p = useEnter(0, 18);
   const line = ease(frame, 4, 24);
   return (
     <Background>
-      <div style={{position: 'absolute', left: ZONE.left, right: 140, top: ZONE.titleTop}}>
+      <div style={{position: 'absolute', left: ZONE.left, right: titleRight, top: ZONE.titleTop}}>
         <div style={{opacity: p}}>
-          <Kicker size={28}>
+          <Kicker size={kickerSize}>
             Estructuras de mercado · {num}/{SERIES_TOTAL}
           </Kicker>
         </div>
@@ -44,7 +48,7 @@ export const ReelFrame: React.FC<{
           style={{
             fontFamily: DISPLAY,
             fontWeight: 800,
-            fontSize: 84,
+            fontSize: titleSize,
             lineHeight: 1.04,
             letterSpacing: '-0.015em',
             marginTop: 18,

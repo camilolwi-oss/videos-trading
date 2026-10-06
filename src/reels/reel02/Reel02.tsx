@@ -2,13 +2,17 @@ import React from 'react';
 import {Audio, interpolate, random, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Kicker} from '../../components/ui';
 import {C, DISPLAY} from '../../theme';
-import {Highlight, OrderflowSection, Phase} from '../components/Orderflow';
+import {FaceCam} from '../components/FaceCam';
+import {Highlight, OrderflowSection, Phase, livePressure} from '../components/Orderflow';
 import {ReelFrame, ZONE} from '../ReelFrame';
 import {Page, Subtitles} from '../Subtitles';
 
 // Timings (seconds) come from the voice track public/audio/reel-02.m4a.
 export const REEL02_SECONDS = 44.5;
 const TITLE = 'Fuerza y presión en cada vela';
+// Title block leaves room for the face cam circle on the right.
+const FRAME = {titleRight: 380, titleSize: 76, kickerSize: 22};
+const FACE = {src: 'video/reel-02-cara.mp4', left: 716, top: 222, size: 304};
 
 const pages: Page[] = [
   {from: 0.98, to: 3.24, text: 'Cuando analizamos el mercado en tiempo real,'},
@@ -38,32 +42,36 @@ const phases: Phase[] = [
   {from: 3.3, to: 8.5, pressure: 0.85, candles: [[-2, 1, -2, 1], [1, 5, 1, 5], [5, 8, 4, 8], [8, 10, 7, 10], [10, 11, 9, 11]]},
   // 9–14: force down, huge bodies that keep going
   {from: 8.58, to: 16.15, pressure: -0.85, candles: [[11, 12, 10, 10], [10, 10, 5, 5], [5, 6, 2, 2], [2, 3, -2, -2], [-2, -1, -4, -4], [-4, -3, -5, -4]]},
-  // 15–20: counter pressure, wicks
-  {from: 16.33, to: 24.8, pressure: 0.2, candles: [[-4, -3, -6, -3], [-3, -2, -5, -2], [-2, 3, -2, 0], [0, 2, -1, 1], [1, 2, -1, 0], [0, 4, -1, 1]]},
-  // 21–27: spikes against the move
-  {from: 24.89, to: 35.4, pressure: -0.2, candles: [[1, 3, 0, 2], [2, 7, 1, 3], [3, 4, 1, 2], [2, 2, -3, 1], [1, 3, 0, 2], [2, 5, 1, 2], [2, 3, 0, 1]]},
+  // 15–20: spikes and aggressive reversals (wick, then big bodies the other way)
+  {
+    from: 16.33, to: 24.8, pressure: 0, autoPressure: true,
+    candles: [[-4, -3, -6, -3], [-3, 1, -3, 1], [1, 5, 1, 4], [4, 9, 4, 5], [5, 5, 1, 1], [1, 2, -3, -2]],
+  },
+  // 21–27: more spikes against the move, each one reversed hard
+  {
+    from: 24.89, to: 35.4, pressure: 0, autoPressure: true,
+    candles: [[-2, -1, -6, -1], [-1, 4, -1, 4], [4, 10, 4, 5], [5, 5, 0, 0], [0, 1, -5, -1], [-1, 4, -1, 3], [3, 4, 2, 3]],
+  },
 ];
 
 const highlights: Highlight[] = [
   {from: 6.6, to: 8.5, idx: 5, kind: 'body', label: 'CUERPO = FUERZA'},
   {from: 11.2, to: 14.3, idx: 10, kind: 'body', label: 'CUERPO GRANDE'},
   {from: 14.4, to: 16.15, idx: 12, kind: 'body', label: 'CONTINÚA'},
-  {from: 17.8, to: 20.5, idx: 15, kind: 'wick', label: 'PRESIÓN CONTRARIA'},
-  {from: 20.6, to: 24.7, idx: 17, kind: 'wick', label: 'NO SE VE EN EL CUERPO'},
-  {from: 24.9, to: 27.6, idx: 20, kind: 'wick', label: 'MECHAS / SPIKES'},
-  {from: 27.95, to: 30.95, idx: 22, kind: 'wick', label: 'PRESIÓN'},
-  {from: 31.1, to: 35.3, idx: 24, kind: 'wick', label: 'INTENSIDAD EN CONTRA'},
+  {from: 17.8, to: 19.85, idx: 15, kind: 'wick', label: 'PRESIÓN CONTRARIA'},
+  {from: 19.9, to: 21.95, idx: 16, kind: 'body', label: 'REVERSIÓN'},
+  {from: 22.0, to: 24.7, idx: 18, kind: 'wick', label: 'NO SE VE EN EL CUERPO'},
+  {from: 24.9, to: 27.6, idx: 21, kind: 'wick', label: 'SPIKE'},
+  {from: 27.95, to: 30.95, idx: 22, kind: 'body', label: 'REVERSIÓN AGRESIVA'},
+  {from: 31.1, to: 35.3, idx: 23, kind: 'wick', label: 'INTENSIDAD EN CONTRA'},
 ];
 
 const pressure = (t: number) => {
-  const base = interpolate(
-    t,
-    [0.6, 3.2, 3.7, 8.4, 8.9, 16.0, 16.5, 24.7, 25.1, 35.4],
-    [0, 0, 0.9, 0.9, -0.9, -0.9, 0.3, 0.3, -0.3, -0.3],
-    clamp,
-  );
-  const wobble = Math.sin(t * 7.3) * interpolate(t, [16.3, 17.3], [0.08, 0.45], clamp);
-  return Math.max(-1, Math.min(1, base + wobble));
+  const base = interpolate(t, [0.6, 3.2, 3.7, 8.4, 8.9, 16.0], [0, 0, 0.9, 0.9, -0.9, -0.9], clamp);
+  // From the spikes on, the book follows the candles: every reversal flips it.
+  const mix = interpolate(t, [16.0, 16.6], [0, 1], clamp);
+  const p = base * (1 - mix) + livePressure(phases, t) * mix;
+  return Math.max(-1, Math.min(1, p));
 };
 
 const states = [
@@ -139,8 +147,9 @@ export const Reel02: React.FC = () => {
   const oNext = win(t, 35.7, 41.5, 0.3);
   const oOutro = interpolate(t, [41.6, 42.0], [0, 1], clamp);
   return (
-    <ReelFrame num={2} title={TITLE}>
+    <ReelFrame num={2} title={TITLE} {...FRAME}>
       <Audio src={staticFile('audio/reel-02.m4a')} />
+      <FaceCam {...FACE} />
       {oFlow > 0 ? (
         <div style={{position: 'absolute', inset: 0, opacity: oFlow}}>
           <Flow t={t} />
@@ -163,7 +172,8 @@ export const Reel02: React.FC = () => {
 
 // Static cover: the big-body candle highlighted.
 export const Reel02Cover: React.FC = () => (
-  <ReelFrame num={2} title={TITLE}>
+  <ReelFrame num={2} title={TITLE} {...FRAME}>
+    <FaceCam {...FACE} />
     <Flow t={12.5} />
     <div
       style={{
