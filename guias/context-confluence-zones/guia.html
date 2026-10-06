@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Context Confluence Zones · Guía de uso · Bull Army</title>
+<style>
+@font-face { font-family: 'Inter'; font-weight: 400; src: url('../../public/fonts/Inter-Regular.otf'); }
+@font-face { font-family: 'Inter'; font-weight: 500; src: url('../../public/fonts/Inter-Medium.otf'); }
+@font-face { font-family: 'Inter'; font-weight: 600; src: url('../../public/fonts/Inter-SemiBold.otf'); }
+@font-face { font-family: 'Inter Display'; font-weight: 700; src: url('../../public/fonts/InterDisplay-Bold.otf'); }
+@font-face { font-family: 'Inter Display'; font-weight: 800; src: url('../../public/fonts/InterDisplay-ExtraBold.otf'); }
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+:root { --bg:#0A0A0B; --panel:#141417; --panel2:#1B1B1F; --line:#2A2A2F; --gold:#E3A82B; --white:#F4F4F5; --text:#D4D4D8; --muted:#8E8E96; --green:#26C281; --red:#F0465A; }
+html, body { margin: 0; padding: 0; background: var(--bg); }
+body { font-family: 'Inter', sans-serif; color: var(--text); font-size: 10.5pt; line-height: 1.55; }
+.page { width: 210mm; height: 297mm; padding: 20mm 18mm 18mm; position: relative; overflow: hidden; page-break-after: always; background: var(--bg); }
+.page:last-child { page-break-after: auto; }
+.footer { position: absolute; left: 18mm; right: 18mm; bottom: 10mm; display: flex; justify-content: space-between; font-size: 8pt; color: var(--muted); letter-spacing: .04em; }
+.kicker { font-weight: 600; font-size: 8.5pt; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
+h1, h2, h3 { font-family: 'Inter Display', sans-serif; color: var(--white); margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 22pt; font-weight: 700; margin: 4px 0 4px; }
+h2 + .rule { width: 46px; height: 3px; background: var(--gold); border-radius: 2px; margin: 10px 0 16px; }
+h3 { font-size: 12.5pt; font-weight: 700; margin: 18px 0 6px; }
+p { margin: 0 0 9px; }
+strong { color: var(--white); font-weight: 600; }
+.gold { color: var(--gold); }
+.lead { font-size: 11.5pt; color: var(--text); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+.card.gold { border-color: var(--gold); background: linear-gradient(90deg, rgba(227,168,43,.12), rgba(255,255,255,.02)); }
+.note { border-left: 3px solid var(--gold); padding: 8px 12px; background: rgba(227,168,43,.07); border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 9.5pt; }
+table { width: 100%; border-collapse: collapse; font-size: 9.3pt; margin: 8px 0 12px; }
+th { text-align: left; font-weight: 600; font-size: 7.8pt; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); padding: 7px 8px; border-bottom: 1px solid var(--gold); }
+td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.k { color: var(--white); font-weight: 600; white-space: nowrap; }
+code, .mono { font-family: 'Inter', sans-serif; font-weight: 600; color: var(--white); background: var(--panel2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 4px; font-size: 9pt; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 7px; }
+ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 8px 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: 2px 0 10px 40px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 13px; background: rgba(227,168,43,.16); color: var(--gold); font-family: 'Inter Display'; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 11pt; }
+ul { margin: 4px 0 10px; padding-left: 18px; }
+ul li { margin-bottom: 4px; }
+ul li::marker { color: var(--gold); }
+a { color: var(--gold); text-decoration: none; font-weight: 600; word-break: break-all; }
+.linkbox { display: flex; gap: 12px; margin: 10px 0; }
+.linkbox .card { flex: 1; margin: 0; }
+.linkbox .tag { font-size: 8pt; letter-spacing: .2em; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.linkbox .name { font-family: 'Inter Display'; font-weight: 800; font-size: 16pt; color: var(--white); margin: 2px 0 6px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.chip { display: inline-block; padding: 3px 9px; border-radius: 5px; font-weight: 600; font-size: 9.5pt; color: #fff; margin: 2px 2px; }
+.decode td:first-child { width: 120px; }
+.chart svg { width: 100%; height: auto; display: block; border-radius: 10px; }
+.legend-num { display: inline-flex; width: 18px; height: 18px; border-radius: 9px; background: var(--gold); color: var(--bg); font-weight: 700; font-size: 9pt; align-items: center; justify-content: center; margin-right: 8px; }
+.score-bar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; margin: 10px 0 4px; font-size: 8.5pt; font-weight: 600; }
+.score-bar div { display: flex; align-items: center; justify-content: center; color: #fff; }
+/* cover */
+.cover { padding: 26mm 20mm; display: flex; flex-direction: column; justify-content: space-between; background:
+  radial-gradient(circle at 85% 8%, rgba(227,168,43,.16), transparent 45%), var(--bg); }
+.cover h1 { font-size: 46pt; font-weight: 800; line-height: 1.02; letter-spacing: -.02em; }
+.cover .line { width: 70px; height: 4px; background: var(--white); margin-bottom: 22px; }
+.cover .sub { font-size: 13pt; color: var(--text); max-width: 140mm; margin-top: 18px; line-height: 1.5; }
+.cover .zones { position: absolute; right: -10mm; top: 55mm; width: 120mm; opacity: .55; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="page cover">
+  <div class="kicker" style="font-size:11pt">Bull Army</div>
+  <svg class="zones" viewBox="0 0 400 300">
+    <rect x="40" y="40" width="360" height="34" fill="#E91E63" fill-opacity=".22" stroke="#E91E63" stroke-width="3"/>
+    <rect x="90" y="120" width="310" height="16" fill="#FF3B3B" fill-opacity=".08" stroke="#FF3B3B" stroke-dasharray="4 4"/>
+    <rect x="140" y="160" width="260" height="26" fill="#FFD700" fill-opacity=".08" stroke="#FFD700" stroke-dasharray="2 3"/>
+    <rect x="20" y="220" width="380" height="40" fill="#26A69A" fill-opacity=".25" stroke="#26A69A" stroke-width="3"/>
+    <polyline points="0,60 30,90 60,70 90,130 120,110 150,170 180,150 210,235 240,215 270,180 300,140 330,150 360,100 400,80" fill="none" stroke="#F4F4F5" stroke-width="3" stroke-linejoin="round"/>
+  </svg>
+  <div style="position:relative">
+    <div class="line"></div>
+    <h1>Context<br>Confluence<br>Zones</h1>
+    <div class="sub">Guía de uso del indicador. Qué muestra en tu gráfico, cómo se lee cada zona y cómo usarlo paso a paso, explicado de forma simple.</div>
+  </div>
+  <div style="font-size:9pt;color:var(--muted)">Material educativo · Bull Army · Indicador para TradingView</div>
+</section>
+
+<!-- ============ ACCESS ============ -->
+<section class="page">
+  <div class="kicker">Antes de empezar</div>
+  <h2>Cómo tener acceso al indicador</h2><div class="rule"></div>
+  <p class="lead">Para usar <strong>Context Confluence Zones</strong> necesitás <strong>dos cuentas</strong>: una en TradingView y una en BloFin. Creálas con estos enlaces; sin ellas no se puede habilitar el acceso.</p>
+  <div class="linkbox">
+    <div class="card gold">
+      <div class="tag">Cuenta 1 · Gráficos</div>
+      <div class="name">TradingView</div>
+      <p style="margin:0 0 6px;font-size:9.5pt">Donde vas a ver y usar el indicador.</p>
+      <a href="https://es.tradingview.com/pricing/?share_your_love=camilolwi">es.tradingview.com/pricing/?share_your_love=camilolwi</a>
+    </div>
+    <div class="card gold">
+      <div class="tag">Cuenta 2 · Exchange</div>
+      <div class="name">BloFin</div>
+      <p style="margin:0 0 6px;font-size:9.5pt">El exchange asociado a la comunidad Bull Army.</p>
+      <a href="https://blofin.com/en/invite/BullArmy">blofin.com/en/invite/BullArmy</a>
+    </div>
+  </div>
+  <h3>Pasos</h3>
+  <ol class="steps">
+    <li><strong>Creá tu cuenta de TradingView</strong> desde el enlace de arriba.</li>
+    <li><strong>Creá tu cuenta de BloFin</strong> desde el enlace de arriba.</li>
+    <li><strong>Enviá tu usuario de TradingView</strong> al equipo de Bull Army para que te habiliten el indicador.</li>
+    <li>En TradingView, abrí un gráfico y tocá <strong>Indicadores</strong>. Entrá en la pestaña <strong>Solo por invitación</strong> (Invite-only), buscá <strong>Context Confluence Zones</strong> y tocá su nombre para agregarlo al gráfico.</li>
+    <li>Marcalo con la <strong>estrella</strong> para tenerlo en Favoritos y encontrarlo rápido la próxima vez.</li>
+  </ol>
+  <div class="note">El indicador funciona en cualquier mercado y temporalidad de TradingView: cripto, forex, índices o acciones.</div>
+
+  <h3>Qué es, en una frase</h3>
+  <div class="card">
+    <p style="margin:0">Es un <strong>mapa de zonas importantes</strong>. Busca niveles de precio con 5 métodos distintos, y cuando varios coinciden en el mismo lugar los junta en una sola <strong>zona de confluencia</strong> con un <span class="gold"><strong>puntaje</strong></span>. Cuanto más alto el puntaje, más relevante es la zona.</p>
+  </div>
+  <div class="note"><strong>No es una señal de compra o venta.</strong> Te muestra <em>dónde</em> conviene prestar atención. La decisión de entrar, el stop y el tamaño de la posición son siempre tuyos.</div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>02</span></div>
+</section>
+
+<!-- ============ WHAT YOU SEE ============ -->
+<section class="page">
+  <div class="kicker">01 · En pantalla</div>
+  <h2>Qué vas a ver en el gráfico</h2><div class="rule"></div>
+  <div class="chart"><svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+<rect width="760" height="380" rx="10" fill="#0F0F12"/>
+<line x1="20" x2="584" y1="88.0" y2="88.0" stroke="rgba(255,255,255,0.05)"/>
+<line x1="20" x2="584" y1="156.0" y2="156.0" stroke="rgba(255,255,255,0.05)"/>
+<line x1="20" x2="584" y1="224.0" y2="224.0" stroke="rgba(255,255,255,0.05)"/>
+<line x1="20" x2="584" y1="292.0" y2="292.0" stroke="rgba(255,255,255,0.05)"/>
+<rect x="46.7" y="66.8" width="537.3" height="17.0" fill="#E91E63" fill-opacity="0.22" stroke="#E91E63" stroke-width="3" />
+<rect x="584" y="64.2" width="155" height="22" rx="4" fill="#E91E63" fill-opacity="0.9"/>
+<text x="592" y="79.2" font-size="11" font-weight="600" fill="#fff">4H R | OB- | LIQ [6.5]</text>
+<rect x="197.8" y="262.2" width="386.2" height="34.0" fill="#26A69A" fill-opacity="0.25" stroke="#26A69A" stroke-width="3" />
+<rect x="584" y="268.2" width="142" height="22" rx="4" fill="#26A69A" fill-opacity="0.9"/>
+<text x="592" y="283.2" font-size="11" font-weight="600" fill="#fff">4H S | OB+ | S [8.1]</text>
+<rect x="73.3" y="185.8" width="510.7" height="10.2" fill="#FF3B3B" fill-opacity="0.08" stroke="#FF3B3B" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="584" y="179.9" width="79" height="22" rx="4" fill="#FF3B3B" fill-opacity="0.9"/>
+<text x="592" y="194.9" font-size="11" font-weight="600" fill="#fff">R [0.7] CT</text>
+<rect x="251.1" y="213.8" width="332.9" height="22.1" fill="#FFD700" fill-opacity="0.08" stroke="#FFD700" stroke-opacity="0.5" stroke-dasharray="2 3"/>
+<line x1="251.1" x2="584" y1="213.8" y2="213.8" stroke="#FFD700" stroke-width="1.5" stroke-dasharray="3 3"/>
+<text x="592" y="217.8" font-size="10.5" fill="#FFD700">61.8</text>
+<line x1="251.1" x2="584" y1="235.9" y2="235.9" stroke="#FFD700" stroke-width="1.5" stroke-dasharray="3 3"/>
+<text x="592" y="239.9" font-size="10.5" fill="#FFD700">78.6</text>
+<line x1="22.8" x2="22.8" y1="118.5" y2="136.2" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="20.0" y="122.0" width="5.5" height="4.8" fill="#F0465A"/>
+<line x1="31.6" x2="31.6" y1="118.7" y2="148.2" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="28.9" y="126.8" width="5.5" height="15.3" fill="#F0465A"/>
+<line x1="40.5" x2="40.5" y1="134.4" y2="153.2" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="37.8" y="142.1" width="5.5" height="8.9" fill="#F0465A"/>
+<line x1="49.4" x2="49.4" y1="146.8" y2="153.8" stroke="#26C281" stroke-width="1.2"/>
+<rect x="46.7" y="149.3" width="5.5" height="1.7" fill="#26C281"/>
+<line x1="58.3" x2="58.3" y1="137.8" y2="161.2" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="55.6" y="149.3" width="5.5" height="8.7" fill="#F0465A"/>
+<line x1="67.2" x2="67.2" y1="148.9" y2="185.0" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="64.4" y="158.1" width="5.5" height="14.0" fill="#F0465A"/>
+<line x1="76.1" x2="76.1" y1="164.5" y2="185.3" stroke="#26C281" stroke-width="1.2"/>
+<rect x="73.3" y="170.9" width="5.5" height="1.5" fill="#26C281"/>
+<line x1="85.0" x2="85.0" y1="159.0" y2="199.0" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="82.2" y="170.9" width="5.5" height="22.9" fill="#F0465A"/>
+<line x1="93.9" x2="93.9" y1="190.7" y2="205.0" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="91.1" y="193.8" width="5.5" height="5.8" fill="#F0465A"/>
+<line x1="102.8" x2="102.8" y1="170.5" y2="208.3" stroke="#26C281" stroke-width="1.2"/>
+<rect x="100.0" y="174.3" width="5.5" height="25.4" fill="#26C281"/>
+<line x1="111.6" x2="111.6" y1="165.9" y2="182.5" stroke="#26C281" stroke-width="1.2"/>
+<rect x="108.9" y="172.1" width="5.5" height="2.3" fill="#26C281"/>
+<line x1="120.5" x2="120.5" y1="169.6" y2="184.8" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="117.8" y="172.1" width="5.5" height="8.6" fill="#F0465A"/>
+<line x1="129.4" x2="129.4" y1="150.0" y2="186.1" stroke="#26C281" stroke-width="1.2"/>
+<rect x="126.7" y="156.8" width="5.5" height="23.9" fill="#26C281"/>
+<line x1="138.3" x2="138.3" y1="145.2" y2="162.0" stroke="#26C281" stroke-width="1.2"/>
+<rect x="135.6" y="152.3" width="5.5" height="4.5" fill="#26C281"/>
+<line x1="147.2" x2="147.2" y1="129.5" y2="156.9" stroke="#26C281" stroke-width="1.2"/>
+<rect x="144.4" y="139.5" width="5.5" height="12.8" fill="#26C281"/>
+<line x1="156.1" x2="156.1" y1="131.5" y2="173.2" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="153.3" y="139.5" width="5.5" height="21.6" fill="#F0465A"/>
+<line x1="165.0" x2="165.0" y1="155.9" y2="185.8" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="162.2" y="161.1" width="5.5" height="11.4" fill="#F0465A"/>
+<line x1="173.9" x2="173.9" y1="165.8" y2="215.3" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="171.1" y="172.4" width="5.5" height="32.2" fill="#F0465A"/>
+<line x1="182.8" x2="182.8" y1="197.1" y2="221.5" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="180.0" y="204.6" width="5.5" height="14.7" fill="#F0465A"/>
+<line x1="191.6" x2="191.6" y1="208.5" y2="229.4" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="188.9" y="219.3" width="5.5" height="1.5" fill="#F0465A"/>
+<line x1="200.5" x2="200.5" y1="215.4" y2="240.8" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="197.8" y="220.8" width="5.5" height="9.9" fill="#F0465A"/>
+<line x1="209.4" x2="209.4" y1="222.2" y2="254.1" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="206.7" y="230.8" width="5.5" height="16.1" fill="#F0465A"/>
+<line x1="218.3" x2="218.3" y1="234.0" y2="256.1" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="215.6" y="246.9" width="5.5" height="1.8" fill="#F0465A"/>
+<line x1="227.2" x2="227.2" y1="246.3" y2="272.1" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="224.4" y="248.8" width="5.5" height="13.3" fill="#F0465A"/>
+<line x1="236.1" x2="236.1" y1="248.5" y2="282.5" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="233.3" y="262.0" width="5.5" height="9.0" fill="#F0465A"/>
+<line x1="245.0" x2="245.0" y1="264.7" y2="299.0" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="242.2" y="271.0" width="5.5" height="18.4" fill="#F0465A"/>
+<line x1="253.9" x2="253.9" y1="282.2" y2="308.7" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="251.1" y="289.4" width="5.5" height="15.6" fill="#F0465A"/>
+<line x1="262.8" x2="262.8" y1="288.1" y2="315.8" stroke="#26C281" stroke-width="1.2"/>
+<rect x="260.0" y="290.5" width="5.5" height="14.5" fill="#26C281"/>
+<line x1="271.6" x2="271.6" y1="273.6" y2="296.9" stroke="#26C281" stroke-width="1.2"/>
+<rect x="268.9" y="278.3" width="5.5" height="12.2" fill="#26C281"/>
+<line x1="280.5" x2="280.5" y1="243.5" y2="285.3" stroke="#26C281" stroke-width="1.2"/>
+<rect x="277.8" y="246.2" width="5.5" height="32.1" fill="#26C281"/>
+<line x1="289.4" x2="289.4" y1="230.8" y2="257.6" stroke="#26C281" stroke-width="1.2"/>
+<rect x="286.7" y="243.1" width="5.5" height="3.1" fill="#26C281"/>
+<line x1="298.3" x2="298.3" y1="217.6" y2="249.7" stroke="#26C281" stroke-width="1.2"/>
+<rect x="295.6" y="222.6" width="5.5" height="20.5" fill="#26C281"/>
+<line x1="307.2" x2="307.2" y1="210.4" y2="256.2" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="304.4" y="222.6" width="5.5" height="20.5" fill="#F0465A"/>
+<line x1="316.1" x2="316.1" y1="239.3" y2="260.1" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="313.3" y="243.1" width="5.5" height="12.5" fill="#F0465A"/>
+<line x1="325.0" x2="325.0" y1="248.1" y2="268.9" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="322.2" y="255.6" width="5.5" height="4.6" fill="#F0465A"/>
+<line x1="333.9" x2="333.9" y1="258.4" y2="272.8" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="331.1" y="260.2" width="5.5" height="6.0" fill="#F0465A"/>
+<line x1="342.8" x2="342.8" y1="257.7" y2="283.1" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="340.0" y="266.2" width="5.5" height="3.9" fill="#F0465A"/>
+<line x1="351.6" x2="351.6" y1="237.9" y2="279.1" stroke="#26C281" stroke-width="1.2"/>
+<rect x="348.9" y="245.7" width="5.5" height="24.3" fill="#26C281"/>
+<line x1="360.5" x2="360.5" y1="228.2" y2="258.1" stroke="#26C281" stroke-width="1.2"/>
+<rect x="357.8" y="230.5" width="5.5" height="15.2" fill="#26C281"/>
+<line x1="369.4" x2="369.4" y1="200.0" y2="241.7" stroke="#26C281" stroke-width="1.2"/>
+<rect x="366.7" y="212.1" width="5.5" height="18.4" fill="#26C281"/>
+<line x1="378.3" x2="378.3" y1="200.6" y2="215.1" stroke="#26C281" stroke-width="1.2"/>
+<rect x="375.6" y="207.1" width="5.5" height="5.0" fill="#26C281"/>
+<line x1="387.2" x2="387.2" y1="182.5" y2="209.6" stroke="#26C281" stroke-width="1.2"/>
+<rect x="384.4" y="184.9" width="5.5" height="22.2" fill="#26C281"/>
+<line x1="396.1" x2="396.1" y1="177.3" y2="190.7" stroke="#26C281" stroke-width="1.2"/>
+<rect x="393.3" y="180.9" width="5.5" height="4.0" fill="#26C281"/>
+<line x1="405.0" x2="405.0" y1="175.0" y2="184.4" stroke="#26C281" stroke-width="1.2"/>
+<rect x="402.2" y="176.7" width="5.5" height="4.3" fill="#26C281"/>
+<line x1="413.9" x2="413.9" y1="160.8" y2="178.7" stroke="#26C281" stroke-width="1.2"/>
+<rect x="411.1" y="166.8" width="5.5" height="9.8" fill="#26C281"/>
+<line x1="422.8" x2="422.8" y1="128.3" y2="170.3" stroke="#26C281" stroke-width="1.2"/>
+<rect x="420.0" y="137.3" width="5.5" height="29.5" fill="#26C281"/>
+<line x1="431.6" x2="431.6" y1="131.5" y2="151.8" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="428.9" y="137.3" width="5.5" height="8.4" fill="#F0465A"/>
+<line x1="440.5" x2="440.5" y1="129.0" y2="159.3" stroke="#26C281" stroke-width="1.2"/>
+<rect x="437.8" y="140.8" width="5.5" height="5.0" fill="#26C281"/>
+<line x1="449.4" x2="449.4" y1="115.5" y2="143.5" stroke="#26C281" stroke-width="1.2"/>
+<rect x="446.7" y="122.9" width="5.5" height="17.8" fill="#26C281"/>
+<line x1="458.3" x2="458.3" y1="117.1" y2="129.2" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="455.6" y="122.9" width="5.5" height="1.5" fill="#F0465A"/>
+<line x1="467.2" x2="467.2" y1="92.4" y2="126.3" stroke="#26C281" stroke-width="1.2"/>
+<rect x="464.4" y="96.1" width="5.5" height="28.3" fill="#26C281"/>
+<line x1="476.1" x2="476.1" y1="76.2" y2="99.5" stroke="#26C281" stroke-width="1.2"/>
+<rect x="473.3" y="84.2" width="5.5" height="11.8" fill="#26C281"/>
+<line x1="485.0" x2="485.0" y1="82.2" y2="94.8" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="482.2" y="84.2" width="5.5" height="2.6" fill="#F0465A"/>
+<line x1="493.9" x2="493.9" y1="54.5" y2="96.8" stroke="#26C281" stroke-width="1.2"/>
+<rect x="491.1" y="66.5" width="5.5" height="20.3" fill="#26C281"/>
+<line x1="502.8" x2="502.8" y1="60.4" y2="98.2" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="500.0" y="66.5" width="5.5" height="28.0" fill="#F0465A"/>
+<line x1="511.6" x2="511.6" y1="81.1" y2="105.5" stroke="#26C281" stroke-width="1.2"/>
+<rect x="508.9" y="89.1" width="5.5" height="5.4" fill="#26C281"/>
+<line x1="520.5" x2="520.5" y1="84.7" y2="121.0" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="517.8" y="89.1" width="5.5" height="20.5" fill="#F0465A"/>
+<line x1="529.4" x2="529.4" y1="88.5" y2="120.9" stroke="#26C281" stroke-width="1.2"/>
+<rect x="526.7" y="100.3" width="5.5" height="9.3" fill="#26C281"/>
+<line x1="538.3" x2="538.3" y1="89.2" y2="104.7" stroke="#26C281" stroke-width="1.2"/>
+<rect x="535.6" y="99.7" width="5.5" height="1.5" fill="#26C281"/>
+<line x1="547.2" x2="547.2" y1="93.8" y2="104.9" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="544.4" y="99.7" width="5.5" height="3.1" fill="#F0465A"/>
+<line x1="556.1" x2="556.1" y1="97.8" y2="115.8" stroke="#F0465A" stroke-width="1.2"/>
+<rect x="553.3" y="102.8" width="5.5" height="8.2" fill="#F0465A"/>
+<line x1="565.0" x2="565.0" y1="74.8" y2="118.1" stroke="#26C281" stroke-width="1.2"/>
+<rect x="562.2" y="87.9" width="5.5" height="23.2" fill="#26C281"/>
+<line x1="573.9" x2="573.9" y1="62.7" y2="100.9" stroke="#26C281" stroke-width="1.2"/>
+<rect x="571.1" y="76.1" width="5.5" height="11.8" fill="#26C281"/>
+<path d="M 262.8 323.8 l -6 10 h 12 z" fill="#00E676"/>
+<circle cx="28.88888888888889" cy="75.25" r="11" fill="#E3A82B"/><text x="28.88888888888889" y="79.25" text-anchor="middle" font-size="12" font-weight="700" fill="#0A0A0B">1</text>
+<circle cx="180.0" cy="279.25" r="11" fill="#E3A82B"/><text x="180.0" y="283.25" text-anchor="middle" font-size="12" font-weight="700" fill="#0A0A0B">2</text>
+<circle cx="55.55555555555556" cy="190.84999999999994" r="11" fill="#E3A82B"/><text x="55.55555555555556" y="194.84999999999994" text-anchor="middle" font-size="12" font-weight="700" fill="#0A0A0B">3</text>
+<circle cx="233.33333333333334" cy="224.84999999999994" r="11" fill="#E3A82B"/><text x="233.33333333333334" y="228.84999999999994" text-anchor="middle" font-size="12" font-weight="700" fill="#0A0A0B">4</text>
+<circle cx="282.75555555555553" cy="333.82826091971106" r="11" fill="#E3A82B"/><text x="282.75555555555553" y="337.82826091971106" text-anchor="middle" font-size="12" font-weight="700" fill="#0A0A0B">5</text>
+</svg></div>
+  <p style="font-size:8.5pt;color:var(--muted);margin-top:6px">Ilustración de ejemplo. Los colores y las etiquetas son los mismos que usa el indicador.</p>
+  <table>
+    <tr><td class="k"><span class="legend-num">1</span>Zona fuerte</td><td>Recuadro con borde grueso. Varias fuentes coinciden y el puntaje es alto (6 o más). Es la zona que más atención merece.</td></tr>
+    <tr><td class="k"><span class="legend-num">2</span>Zona a favor</td><td>Zona alineada con la tendencia: su puntaje sube. Acá, un soporte de 4H + un order block alcista + un soporte.</td></tr>
+    <tr><td class="k"><span class="legend-num">3</span>Zona débil o CT</td><td>Borde punteado y color tenue: zona en <strong>contra de la tendencia</strong> (CT) o con poco puntaje. Tomala con más cuidado.</td></tr>
+    <tr><td class="k"><span class="legend-num">4</span>Fibonacci</td><td>Líneas punteadas del tramo dominante. La banda dorada entre 61.8 y 78.6 es la <strong>zona profunda</strong>.</td></tr>
+    <tr><td class="k"><span class="legend-num">5</span>Barrida</td><td>Triángulo verde abajo (o rojo arriba): el precio barrió una liquidez y cerró de vuelta. Suele anticipar una reacción.</td></tr>
+  </table>
+  <p>Además, arriba a la derecha aparece la <strong>tabla resumen</strong> y abajo a la izquierda la <strong>leyenda</strong> con el significado de cada etiqueta. Las dos se explican más adelante.</p>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>03</span></div>
+</section>
+
+<!-- ============ SOURCES ============ -->
+<section class="page">
+  <div class="kicker">02 · De dónde salen las zonas</div>
+  <h2>Las 5 fuentes de niveles</h2><div class="rule"></div>
+  <p class="lead">El indicador busca niveles con 5 métodos. Cada uno tiene un <strong>peso</strong>: cuanto más importante es la fuente, más puntos aporta a la zona.</p>
+  <table>
+    <tr><th>Fuente</th><th>Qué es, simple</th><th>Etiqueta</th><th>Peso</th></tr>
+    <tr><td class="k"><span class="sw" style="background:#E91E63"></span>Temporalidad mayor</td><td>Máximos y mínimos importantes de un gráfico más grande (por defecto 4H). Son los niveles que más respeta el mercado.</td><td><code>4H R</code> <code>4H S</code></td><td class="k gold">3</td></tr>
+    <tr><td class="k"><span class="sw" style="background:#00BCD4"></span>Order block</td><td>La última vela contraria antes de un movimiento fuerte. Marca dónde entraron órdenes grandes.</td><td><code>OB+</code> <code>OB-</code></td><td class="k gold">2</td></tr>
+    <tr><td class="k"><span class="sw" style="background:#FFD700"></span>Liquidez</td><td>Máximos y mínimos donde se acumulan stops. El precio suele ir a buscarlos.</td><td><code>LIQ</code> <code>SWP</code></td><td class="k gold">1.5</td></tr>
+    <tr><td class="k"><span class="sw" style="background:#00C853"></span>Soporte y resistencia</td><td>Giros del precio en el gráfico actual.</td><td><code>S</code> <code>R</code></td><td class="k gold">1</td></tr>
+    <tr><td class="k"><span class="sw" style="background:#B39DDB"></span>Fibonacci</td><td>Retrocesos del último tramo dominante. Por defecto solo suman los profundos: 61.8, 71.4 y 78.6.</td><td><code>Fib 61.8</code></td><td class="k gold">1</td></tr>
+  </table>
+  <h3>Cuándo un nivel deja de valer</h3>
+  <ul>
+    <li><strong>Soporte o resistencia:</strong> si una vela <strong>cierra</strong> del otro lado, el nivel se rompe y desaparece.</li>
+    <li><strong>Liquidez:</strong> si la mecha la atraviesa pero el precio cierra de vuelta, queda <strong>barrida</strong> (<code>SWP</code>) y vale la mitad. Si cierra del otro lado, desaparece.</li>
+    <li><strong>Order block:</strong> la primera vez que el precio lo toca, vale la mitad. Si cierra atravesándolo, desaparece.</li>
+  </ul>
+  <h3>El filtro RSI</h3>
+  <p>Por defecto, solo entran al mapa los niveles que nacieron con el RSI en una zona extrema (por encima de 65 o por debajo de 35). Así quedan los niveles que se formaron con emoción en el mercado. Fibonacci nunca se filtra.</p>
+  <div class="note">¿Ves pocas zonas? Probá poner el filtro RSI en <code>Off</code> (ver Ajustes). Vas a ver todos los niveles.</div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>04</span></div>
+</section>
+
+<!-- ============ LABELS & SCORE ============ -->
+<section class="page">
+  <div class="kicker">03 · Cómo leer una zona</div>
+  <h2>La etiqueta y el puntaje</h2><div class="rule"></div>
+  <p class="lead">Cada zona tiene una etiqueta a la derecha que dice <strong>qué fuentes coinciden</strong> y <strong>cuánto vale</strong>. Ejemplo:</p>
+  <div class="card" style="text-align:center;padding:16px">
+    <span class="chip" style="background:#26A69A">4H S</span><span style="color:var(--muted)">|</span>
+    <span class="chip" style="background:#00BCD4">OB+</span><span style="color:var(--muted)">|</span>
+    <span class="chip" style="background:#00C853">S x2</span>
+    <span class="chip" style="background:#E3A82B;color:#0A0A0B">[8.1]</span>
+  </div>
+  <table class="decode">
+    <tr><td class="k">4H S</td><td>Soporte de la temporalidad mayor (4 horas).</td></tr>
+    <tr><td class="k">OB+</td><td>Order block alcista. <code>OB-</code> es bajista.</td></tr>
+    <tr><td class="k">S x2</td><td>Dos soportes del gráfico actual en la misma zona. <code>xN</code> = cuántos hay.</td></tr>
+    <tr><td class="k">LIQ / SWP</td><td>Liquidez todavía intacta / liquidez ya barrida (vale la mitad).</td></tr>
+    <tr><td class="k">[8.1]</td><td><strong>Puntaje de la zona.</strong> Es lo más importante de la etiqueta.</td></tr>
+    <tr><td class="k">CT</td><td>Zona en <strong>contra de la tendencia</strong>. Su puntaje se reduce.</td></tr>
+  </table>
+  <h3>Cómo se calcula el puntaje</h3>
+  <p>Se suman los pesos de todo lo que coincide en la zona y se ajusta según la tendencia:</p>
+  <div class="card">
+    <p style="margin:0 0 6px"><strong>4H S</strong> (3) + <strong>OB+</strong> (2) + <strong>S</strong> (1) = <strong>6</strong></p>
+    <p style="margin:0 0 6px">La tendencia es alcista y la zona también → <span class="gold"><strong>× 1.35</strong></span> = <strong class="gold">8.1</strong></p>
+    <p style="margin:0;color:var(--muted);font-size:9.5pt">Si la zona fuera en contra de la tendencia: × 0.65 = 3.9, y llevaría la marca CT.</p>
+  </div>
+  <h3>Qué significa cada puntaje</h3>
+  <div class="score-bar">
+    <div style="flex:3;background:#2A2A2F">menos de 1 · no se muestra</div>
+    <div style="flex:3;background:#3a3a44">1 a 4 · normal</div>
+    <div style="flex:2;background:#b07d1b">4 a 6 · caliente</div>
+    <div style="flex:2;background:#E3A82B;color:#0A0A0B">6 o más · fuerte</div>
+  </div>
+  <ul>
+    <li><strong>Caliente (4+):</strong> borde más grueso. Puede disparar la alerta «Hot confluence zone».</li>
+    <li><strong>Fuerte (6+):</strong> borde grueso y relleno más visible. Son las zonas prioritarias.</li>
+  </ul>
+  <div class="note">El <strong>color</strong> de la zona lo da la fuente más importante que contiene (temporalidad mayor primero, después order block, liquidez, S/R y Fibonacci).</div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>05</span></div>
+</section>
+
+<!-- ============ COLORS + TABLE ============ -->
+<section class="page">
+  <div class="kicker">04 · Referencias</div>
+  <h2>Colores, tabla y leyenda</h2><div class="rule"></div>
+  <div class="grid2">
+    <div>
+      <h3 style="margin-top:0">Colores</h3>
+      <table>
+        <tr><td><span class="sw" style="background:#E91E63"></span>Resistencia temporalidad mayor</td></tr>
+        <tr><td><span class="sw" style="background:#26A69A"></span>Soporte temporalidad mayor</td></tr>
+        <tr><td><span class="sw" style="background:#00BCD4"></span>Order block alcista</td></tr>
+        <tr><td><span class="sw" style="background:#FF5722"></span>Order block bajista</td></tr>
+        <tr><td><span class="sw" style="background:#FFD700"></span>Liquidez arriba (máximos)</td></tr>
+        <tr><td><span class="sw" style="background:#FF69B4"></span>Liquidez abajo (mínimos)</td></tr>
+        <tr><td><span class="sw" style="background:#FF3B3B"></span>Resistencia</td></tr>
+        <tr><td><span class="sw" style="background:#00C853"></span>Soporte</td></tr>
+        <tr><td><span class="sw" style="background:#B39DDB"></span>Fibonacci</td></tr>
+        <tr><td><span class="sw" style="background:#FFD700"></span>Zona profunda Fib (61.8–78.6)</td></tr>
+        <tr><td><span class="sw" style="background:#4DD0E1"></span>Extensiones Fib (1.382 / 1.618)</td></tr>
+        <tr><td><span class="sw" style="background:#607D8B"></span>Nivel invalidado (si elegís verlos)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3 style="margin-top:0">Tabla resumen (arriba a la derecha)</h3>
+      <table>
+        <tr><td class="k">CONTEXT</td><td>Temporalidad del gráfico.</td></tr>
+        <tr><td class="k">Price</td><td>Precio actual.</td></tr>
+        <tr><td class="k">Trend bias</td><td>Tendencia: <span style="color:#596AE3;font-weight:600">Up</span>, <span style="color:#FF3B3B;font-weight:600">Down</span> o <span style="color:#FF9800;font-weight:600">Flat</span> (lateral), con su inclinación.</td></tr>
+        <tr><td class="k">RSI</td><td>RSI actual y modo del filtro. Verde = sobreventa, rojo = sobrecompra.</td></tr>
+        <tr><td class="k">HTF</td><td>Temporalidad mayor en uso. «invalid» si no es mayor que tu gráfico.</td></tr>
+        <tr><td class="k">Fib leg</td><td>Dirección del tramo de Fibonacci.</td></tr>
+        <tr><td class="k">Score here</td><td><strong>Puntaje donde está el precio ahora.</strong> En rojo cuando es zona caliente.</td></tr>
+        <tr><td class="k">Shown / active</td><td>Niveles visibles / niveles activos.</td></tr>
+        <tr><td class="k">Tolerance</td><td>Margen usado para agrupar niveles.</td></tr>
+      </table>
+    </div>
+  </div>
+  <h3>Leyenda (abajo a la izquierda)</h3>
+  <p>Es un recordatorio rápido de las etiquetas (<code>4H R / S</code>, <code>OB+ / OB-</code>, <code>LIQ</code>, <code>SWP</code>, <code>R / S</code>, <code>Fib</code>, <code>xN [N] CT</code>). Si ya las conocés, podés ocultarla desde los ajustes para tener el gráfico más limpio.</p>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>06</span></div>
+</section>
+
+<!-- ============ HOW TO USE ============ -->
+<section class="page">
+  <div class="kicker">05 · En la práctica</div>
+  <h2>Cómo usarlo paso a paso</h2><div class="rule"></div>
+  <ol class="steps">
+    <li><strong>Mirá la tendencia en la tabla</strong> (<em>Trend bias</em>). Te dice hacia dónde conviene mirar: Up, Down o Flat.</li>
+    <li><strong>Ubicá las zonas fuertes cercanas</strong> al precio, las de puntaje 6 o más. Son tus zonas de interés del día.</li>
+    <li><strong>Priorizá las zonas a favor de la tendencia.</strong> Las marcadas con <code>CT</code> van en contra: exigen más confirmación.</li>
+    <li><strong>Esperá a que el precio llegue a la zona.</strong> El indicador no te dice que entres: te dice <em>dónde</em> mirar. Mirá cómo reacciona el precio ahí: rechazo, barrida de liquidez (triángulos) o ruptura.</li>
+    <li><strong>Mirá «Score here».</strong> Si el precio está dentro de una zona caliente, el número se pone rojo.</li>
+    <li><strong>Definí tu plan:</strong> entrada, stop del otro lado de la zona y objetivo en la siguiente zona fuerte. Siempre con gestión de riesgo.</li>
+  </ol>
+  <h3>Alertas</h3>
+  <p>Para que TradingView te avise: tocá el ícono del <strong>reloj (Alertas)</strong> → <strong>Condición</strong>: elegí <strong>Context Confluence Zones</strong> → elegí la alerta → <strong>Crear</strong>.</p>
+  <table>
+    <tr><th>Alerta</th><th>Cuándo te avisa</th></tr>
+    <tr><td class="k">Hot confluence zone</td><td>El precio entra en una zona con puntaje caliente (4 o más).</td></tr>
+    <tr><td class="k">Buy-side liquidity swept</td><td>Se barrió liquidez de arriba y el precio cerró de vuelta abajo.</td></tr>
+    <tr><td class="k">Sell-side liquidity swept</td><td>Se barrió liquidez de abajo y el precio cerró de vuelta arriba.</td></tr>
+    <tr><td class="k">Order block entered</td><td>El precio toca un order block por primera vez.</td></tr>
+    <tr><td class="k">Resistance broken</td><td>Una vela cierra por encima de una resistencia.</td></tr>
+    <tr><td class="k">Support broken</td><td>Una vela cierra por debajo de un soporte.</td></tr>
+  </table>
+  <div class="note">Las alertas de barrida, por defecto, solo saltan si el RSI está en zona extrema. Así filtra las barridas con menos fuerza.</div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>07</span></div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section class="page">
+  <div class="kicker">06 · Configuración</div>
+  <h2>Los ajustes que más vas a usar</h2><div class="rule"></div>
+  <p class="lead">Abrí los ajustes con el <strong>engranaje</strong> al lado del nombre del indicador. Los valores de fábrica funcionan bien; estos son los que vale la pena conocer.</p>
+  <table>
+    <tr><th>Ajuste</th><th>Qué hace</th><th>De fábrica</th></tr>
+    <tr><td class="k">Higher timeframe</td><td>Temporalidad mayor de donde salen los niveles más importantes. Tiene que ser <strong>mayor</strong> que la de tu gráfico.</td><td>4H</td></tr>
+    <tr><td class="k">Minimum score to display</td><td>Puntaje mínimo para que una zona aparezca. Subilo para ver menos zonas.</td><td>1</td></tr>
+    <tr><td class="k">Score that marks a zone as hot / strong</td><td>Desde qué puntaje una zona es caliente o fuerte.</td><td>4 / 6</td></tr>
+    <tr><td class="k">Counter-trend clusters</td><td>Qué hacer con las zonas en contra de la tendencia: <code>Keep</code> mostrarlas igual, <code>Fade</code> mostrarlas tenues, <code>Hide</code> ocultarlas.</td><td>Fade</td></tr>
+    <tr><td class="k">Read the bias from another timeframe</td><td>Leer la tendencia de una temporalidad mayor (por ejemplo 4H) en vez de la del gráfico.</td><td>No</td></tr>
+    <tr><td class="k">RSI filter · Filter mode</td><td><code>Off</code> muestra todos los niveles. <code>Outside bands</code> solo los nacidos con RSI extremo. <code>Directional</code> exige sobreventa para niveles alcistas y sobrecompra para bajistas.</td><td>Outside bands</td></tr>
+    <tr><td class="k">Invalidated levels</td><td>Qué pasa con los niveles rotos: <code>Hide</code> los borra, <code>Fade</code> los deja como línea punteada gris.</td><td>Hide</td></tr>
+    <tr><td class="k">Max levels per type</td><td>Cuántos niveles guarda de cada tipo. Menos = gráfico más limpio.</td><td>5</td></tr>
+    <tr><td class="k">Label content</td><td>Qué dice la etiqueta: solo texto, solo precio, ambos o nada.</td><td>Text only</td></tr>
+    <tr><td class="k">Text size</td><td>Tamaño del texto de las etiquetas.</td><td>Tiny</td></tr>
+    <tr><td class="k">Show the summary table / legend</td><td>Mostrar u ocultar la tabla y la leyenda.</td><td>Sí</td></tr>
+    <tr><td class="k">Show … (cada fuente)</td><td>Prender o apagar cada fuente: S/R, order blocks, liquidez, Fibonacci y temporalidad mayor.</td><td>Todas</td></tr>
+  </table>
+  <div class="note">Los ajustes del grupo <em>Confluence weights</em> cambian cuánto vale cada fuente. Si recién empezás, dejalos como vienen.</div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>08</span></div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="page">
+  <div class="kicker">07 · Dudas comunes</div>
+  <h2>Preguntas frecuentes</h2><div class="rule"></div>
+  <h3>¿El indicador repinta?</h3>
+  <p>Los niveles de la temporalidad mayor se leen solo de velas <strong>cerradas</strong>, así que no cambian después. Los soportes, resistencias y liquidez necesitan unas velas para confirmarse (10 y 8 por defecto): por eso aparecen un poco después del giro. Es normal y es lo que los hace confiables.</p>
+  <h3>Veo muy pocas zonas</h3>
+  <p>Pasa por el filtro RSI. Ponelo en <code>Off</code> o bajá el <em>Minimum score to display</em>.</p>
+  <h3>Veo demasiadas zonas</h3>
+  <p>Subí el <em>Minimum score to display</em> (por ejemplo a 3), bajá <em>Max levels per type</em> o poné <em>Counter-trend clusters</em> en <code>Hide</code>.</p>
+  <h3>En la tabla dice «HTF invalid»</h3>
+  <p>La temporalidad mayor elegida no es mayor que la de tu gráfico. Por ejemplo, si mirás un gráfico de 4H, poné la temporalidad mayor en 1D.</p>
+  <h3>¿Qué temporalidad uso?</h3>
+  <p>Funciona en todas. Una combinación simple: gráfico de 15m o 1H con temporalidad mayor de 4H; gráfico de 4H con temporalidad mayor de 1D.</p>
+  <h3>¿Puedo operar solo con el indicador?</h3>
+  <p>No es lo recomendable. Usalo como mapa de contexto junto con tu lectura del precio, tu plan y tu gestión de riesgo.</p>
+
+  <div class="card gold" style="margin-top:22px">
+    <div class="kicker" style="margin-bottom:6px">Recordá</div>
+    <p style="margin:0">Para mantener el acceso necesitás tus cuentas activas de <a href="https://es.tradingview.com/pricing/?share_your_love=camilolwi">TradingView</a> y <a href="https://blofin.com/en/invite/BullArmy">BloFin</a> creadas con los enlaces de Bull Army.</p>
+  </div>
+  <p style="font-size:8.5pt;color:var(--muted);margin-top:24px">Aviso: este material es educativo y no constituye recomendación de inversión. Operar en los mercados financieros implica riesgo de pérdida. Los resultados pasados no garantizan resultados futuros.</p>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>09</span></div>
+</section>
+
+</body>
+</html>
