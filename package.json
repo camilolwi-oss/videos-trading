@@ -1,0 +1,24 @@
+{
+  "name": "videos-trading",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Videos educativos de trading en motion graphics hechos con Remotion",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render EstructurasDeMercado out/estructuras-de-mercado.mp4",
+    "still": "remotion still EstructurasDeMercado out/thumbnail.png --frame=60",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.533",
+    "@remotion/fonts": "^4.0.533",
+    "@remotion/transitions": "^4.0.533",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.533"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}
