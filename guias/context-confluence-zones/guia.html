@@ -396,12 +396,79 @@ a { color: var(--gold); text-decoration: none; font-weight: 600; word-break: bre
   <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>06</span></div>
 </section>
 
+<!-- ============ TREND MA (1/2) ============ -->
+<section class="page">
+  <div class="kicker">05 · Tendencia</div>
+  <h2>La media móvil de tendencia</h2><div class="rule"></div>
+  <p class="lead">El indicador trae una <strong>media móvil que cambia de color según la tendencia</strong>. Viene <strong>apagada</strong> de fábrica, así que tenés que activarla.</p>
+  <div class="grid2" style="align-items:start">
+    <div>
+      <h3 style="margin-top:4px">Cómo activarla</h3>
+      <ol class="steps">
+        <li>Tocá el <strong>engranaje</strong> al lado del nombre del indicador.</li>
+        <li>En <strong>Entradas de datos</strong>, bajá hasta el grupo <strong>Trend bias</strong>.</li>
+        <li>Marcá <strong>Plot the trend basis</strong>.</li>
+        <li>Si querés, cambiá los colores en <em>Bias up / down / flat color</em>.</li>
+      </ol>
+    </div>
+    <div>
+      <img src="ajuste-media.png" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block">
+      <p style="font-size:8.5pt;color:var(--muted);margin-top:6px">La opción dentro de los ajustes del indicador.</p>
+    </div>
+  </div>
+
+  <h3>Qué significa cada color</h3>
+  <table>
+    <tr><td class="k"><span class="sw" style="background:#596AE3"></span>Azul</td><td><strong>Tendencia alcista.</strong> La media viene subiendo con fuerza: los compradores tienen el control.</td></tr>
+    <tr><td class="k"><span class="sw" style="background:#FF3B3B"></span>Rojo</td><td><strong>Tendencia bajista.</strong> La media viene bajando con fuerza: los vendedores tienen el control.</td></tr>
+    <tr><td class="k"><span class="sw" style="background:#FF9800"></span>Naranja</td><td><strong>Sin tendencia clara.</strong> La media está casi plana: el mercado está lateral o cambiando de dirección.</td></tr>
+  </table>
+
+  <h3>Cómo funciona</h3>
+  <ul>
+    <li>Es una <strong>media móvil de Hull de 55 velas</strong>. Suaviza el precio para ver la dirección sin el ruido de cada vela, y reacciona rápido cuando el mercado gira.</li>
+    <li>El indicador mide <strong>cuánto se movió la media en las últimas 5 velas</strong>, comparado con la volatilidad normal del mercado (el ATR).</li>
+    <li>Si subió más de <strong>0,15 ATR</strong>, se pinta de azul. Si bajó más de 0,15 ATR, de rojo. Si se movió menos, de naranja.</li>
+  </ul>
+  <h3>Ajustes de la media (grupo Trend bias)</h3>
+  <table>
+    <tr><td class="k">Trend basis length</td><td>Velas de la media. Más alto = más lenta y suave.</td><td>55</td></tr>
+    <tr><td class="k">Slope window / threshold</td><td>Velas e inclinación mínima para dejar de ser naranja.</td><td style="white-space:nowrap">5 / 0,15</td></tr>
+    <tr><td class="k">Read the bias from another timeframe</td><td>Toma la tendencia de una temporalidad mayor (<em>Trend timeframe</em>, 4H de fábrica).</td><td>No</td></tr>
+  </table>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>07</span></div>
+</section>
+
+<!-- ============ TREND MA (2/2) ============ -->
+<section class="page">
+  <div class="kicker">05 · Tendencia</div>
+  <h2>Por qué es importante</h2><div class="rule"></div>
+  <p class="lead">La media no es un adorno: es <strong>la misma línea que usa el indicador para decidir la tendencia</strong>. Verla en el gráfico te muestra en todo momento hacia dónde empuja el mercado.</p>
+  <ul>
+    <li><strong>Es la tendencia de la tabla.</strong> El valor <em>Trend bias</em> (Up, Down o Flat) sale de esta media.</li>
+    <li><strong>Cambia el puntaje de las zonas.</strong> Una zona a favor de la tendencia vale <strong>×1,35</strong>. Una en contra vale <strong>×0,65</strong> y se marca con <code>CT</code>.</li>
+    <li><strong>Te ayuda a operar a favor de la corriente.</strong> Las operaciones a favor de la tendencia suelen tener más recorrido y menos riesgo que las que van en contra.</li>
+  </ul>
+  <div class="chart" style="margin-top:12px"><img src="ejemplo-media.png" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block"></div>
+  <p style="font-size:8.5pt;color:var(--muted);margin-top:6px">Ejemplo real en BTCUSDT, 5 minutos: la media se pone roja en las caídas, azul en las subidas y naranja cuando el precio lateraliza.</p>
+
+  <h3>Cómo usarla con las zonas</h3>
+  <table>
+    <tr><th>Color</th><th>Qué buscar</th></tr>
+    <tr><td class="k"><span class="sw" style="background:#596AE3"></span>Azul</td><td>Compras en zonas de <strong>soporte</strong> por debajo del precio: <code>S</code>, <code>OB+</code>, <code>4H S</code>, liquidez de abajo.</td></tr>
+    <tr><td class="k"><span class="sw" style="background:#FF3B3B"></span>Rojo</td><td>Ventas en zonas de <strong>resistencia</strong> por encima del precio: <code>R</code>, <code>OB-</code>, <code>4H R</code>, liquidez de arriba.</td></tr>
+    <tr><td class="k"><span class="sw" style="background:#FF9800"></span>Naranja</td><td>Mercado sin dirección: <strong>más cuidado</strong>. Las zonas valen sin ajuste y conviene esperar confirmación.</td></tr>
+  </table>
+  <div class="note">Como la inclinación se mide contra la volatilidad, la misma regla funciona igual en BTC, en oro o en una acción, sin tocar nada.</div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>08</span></div>
+</section>
+
 <!-- ============ HOW TO USE ============ -->
 <section class="page">
-  <div class="kicker">05 · En la práctica</div>
+  <div class="kicker">06 · En la práctica</div>
   <h2>Cómo usarlo paso a paso</h2><div class="rule"></div>
   <ol class="steps">
-    <li><strong>Mirá la tendencia en la tabla</strong> (<em>Trend bias</em>). Te dice hacia dónde conviene mirar: Up, Down o Flat.</li>
+    <li><strong>Mirá la tendencia:</strong> el color de la media (azul, rojo o naranja) o el <em>Trend bias</em> de la tabla. Te dice hacia dónde conviene mirar.</li>
     <li><strong>Ubicá las zonas fuertes cercanas</strong> al precio, las de puntaje 6 o más. Son tus zonas de interés del día.</li>
     <li><strong>Priorizá las zonas a favor de la tendencia.</strong> Las marcadas con <code>CT</code> van en contra: exigen más confirmación.</li>
     <li><strong>Esperá a que el precio llegue a la zona.</strong> El indicador no te dice que entres: te dice <em>dónde</em> mirar. Mirá cómo reacciona el precio ahí: rechazo, barrida de liquidez (triángulos) o ruptura.</li>
@@ -420,12 +487,12 @@ a { color: var(--gold); text-decoration: none; font-weight: 600; word-break: bre
     <tr><td class="k">Support broken</td><td>Una vela cierra por debajo de un soporte.</td></tr>
   </table>
   <div class="note">Las alertas de barrida, por defecto, solo saltan si el RSI está en zona extrema. Así filtra las barridas con menos fuerza.</div>
-  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>07</span></div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>09</span></div>
 </section>
 
 <!-- ============ SETTINGS ============ -->
 <section class="page">
-  <div class="kicker">06 · Configuración</div>
+  <div class="kicker">07 · Configuración</div>
   <h2>Los ajustes que más vas a usar</h2><div class="rule"></div>
   <p class="lead">Abrí los ajustes con el <strong>engranaje</strong> al lado del nombre del indicador. Los valores de fábrica funcionan bien; estos son los que vale la pena conocer.</p>
   <table>
@@ -434,6 +501,7 @@ a { color: var(--gold); text-decoration: none; font-weight: 600; word-break: bre
     <tr><td class="k">Minimum score to display</td><td>Puntaje mínimo para que una zona aparezca. Subilo para ver menos zonas.</td><td>1</td></tr>
     <tr><td class="k">Score that marks a zone as hot / strong</td><td>Desde qué puntaje una zona es caliente o fuerte.</td><td>4 / 6</td></tr>
     <tr><td class="k">Counter-trend clusters</td><td>Qué hacer con las zonas en contra de la tendencia: <code>Keep</code> mostrarlas igual, <code>Fade</code> mostrarlas tenues, <code>Hide</code> ocultarlas.</td><td>Fade</td></tr>
+    <tr><td class="k">Plot the trend basis</td><td>Muestra la media móvil de tendencia en el gráfico (ver sección 05).</td><td>No</td></tr>
     <tr><td class="k">Read the bias from another timeframe</td><td>Leer la tendencia de una temporalidad mayor (por ejemplo 4H) en vez de la del gráfico.</td><td>No</td></tr>
     <tr><td class="k">RSI filter · Filter mode</td><td><code>Off</code> muestra todos los niveles. <code>Outside bands</code> solo los nacidos con RSI extremo. <code>Directional</code> exige sobreventa para niveles alcistas y sobrecompra para bajistas.</td><td>Outside bands</td></tr>
     <tr><td class="k">Invalidated levels</td><td>Qué pasa con los niveles rotos: <code>Hide</code> los borra, <code>Fade</code> los deja como línea punteada gris.</td><td>Hide</td></tr>
@@ -444,12 +512,12 @@ a { color: var(--gold); text-decoration: none; font-weight: 600; word-break: bre
     <tr><td class="k">Show … (cada fuente)</td><td>Prender o apagar cada fuente: S/R, order blocks, liquidez, Fibonacci y temporalidad mayor.</td><td>Todas</td></tr>
   </table>
   <div class="note">Los ajustes del grupo <em>Confluence weights</em> cambian cuánto vale cada fuente. Si recién empezás, dejalos como vienen.</div>
-  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>08</span></div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>10</span></div>
 </section>
 
 <!-- ============ FAQ ============ -->
 <section class="page">
-  <div class="kicker">07 · Dudas comunes</div>
+  <div class="kicker">08 · Dudas comunes</div>
   <h2>Preguntas frecuentes</h2><div class="rule"></div>
   <h3>¿El indicador repinta?</h3>
   <p>Los niveles de la temporalidad mayor se leen solo de velas <strong>cerradas</strong>, así que no cambian después. Los soportes, resistencias y liquidez necesitan unas velas para confirmarse (10 y 8 por defecto): por eso aparecen un poco después del giro. Es normal y es lo que los hace confiables.</p>
@@ -469,7 +537,7 @@ a { color: var(--gold); text-decoration: none; font-weight: 600; word-break: bre
     <p style="margin:0">Para mantener el acceso necesitás tus cuentas activas de <a href="https://es.tradingview.com/pricing/?share_your_love=camilolwi">TradingView</a> y <a href="https://blofin.com/en/invite/BullArmy">BloFin</a> creadas con los enlaces de Bull Army.</p>
   </div>
   <p style="font-size:8.5pt;color:var(--muted);margin-top:24px">Aviso: este material es educativo y no constituye recomendación de inversión. Operar en los mercados financieros implica riesgo de pérdida. Los resultados pasados no garantizan resultados futuros.</p>
-  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>09</span></div>
+  <div class="footer"><span>BULL ARMY · Context Confluence Zones</span><span>11</span></div>
 </section>
 
 </body>
