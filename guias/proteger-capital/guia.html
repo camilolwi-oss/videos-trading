@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cómo proteger tu capital en cripto · Bull Army</title>
+<style>
+@font-face { font-family: 'Inter'; font-weight: 400; src: url('../../public/fonts/Inter-Regular.otf'); }
+@font-face { font-family: 'Inter'; font-weight: 500; src: url('../../public/fonts/Inter-Medium.otf'); }
+@font-face { font-family: 'Inter'; font-weight: 600; src: url('../../public/fonts/Inter-SemiBold.otf'); }
+@font-face { font-family: 'Inter Display'; font-weight: 700; src: url('../../public/fonts/InterDisplay-Bold.otf'); }
+@font-face { font-family: 'Inter Display'; font-weight: 800; src: url('../../public/fonts/InterDisplay-ExtraBold.otf'); }
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+:root { --bg:#0A0A0B; --panel:#141417; --panel2:#1B1B1F; --line:#2A2A2F; --gold:#E3A82B; --white:#F4F4F5; --text:#D4D4D8; --muted:#8E8E96; --green:#26C281; --red:#F0465A; --blue:#4C8DF6; }
+html, body { margin: 0; padding: 0; background: var(--bg); }
+body { font-family: 'Inter', sans-serif; color: var(--text); font-size: 10.5pt; line-height: 1.55; }
+.page { width: 210mm; height: 297mm; padding: 20mm 18mm 18mm; position: relative; overflow: hidden; page-break-after: always; background: var(--bg); }
+.page:last-child { page-break-after: auto; }
+.footer { position: absolute; left: 18mm; right: 18mm; bottom: 10mm; display: flex; justify-content: space-between; font-size: 8pt; color: var(--muted); letter-spacing: .04em; }
+.kicker { font-weight: 600; font-size: 8.5pt; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
+h1, h2, h3 { font-family: 'Inter Display', sans-serif; color: var(--white); margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 22pt; font-weight: 700; margin: 4px 0 4px; }
+h2 + .rule { width: 46px; height: 3px; background: var(--gold); border-radius: 2px; margin: 10px 0 16px; }
+h3 { font-size: 12.5pt; font-weight: 700; margin: 18px 0 6px; }
+p { margin: 0 0 9px; }
+strong { color: var(--white); font-weight: 600; }
+.gold { color: var(--gold); }
+.green { color: var(--green); }
+.red { color: var(--red); }
+.lead { font-size: 11.5pt; color: var(--text); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+.card.hl { border-color: var(--gold); background: linear-gradient(90deg, rgba(227,168,43,.12), rgba(255,255,255,.02)); }
+.card.bad { border-color: rgba(240,70,90,.6); background: linear-gradient(90deg, rgba(240,70,90,.10), rgba(255,255,255,.02)); }
+.card.good { border-color: rgba(38,194,129,.6); background: linear-gradient(90deg, rgba(38,194,129,.10), rgba(255,255,255,.02)); }
+.card p:last-child { margin-bottom: 0; }
+.note { border-left: 3px solid var(--gold); padding: 8px 12px; background: rgba(227,168,43,.07); border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 9.5pt; }
+table { width: 100%; border-collapse: collapse; font-size: 9.3pt; margin: 8px 0 12px; }
+th { text-align: left; font-weight: 600; font-size: 7.8pt; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); padding: 7px 8px; border-bottom: 1px solid var(--gold); }
+td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.k { color: var(--white); font-weight: 600; white-space: nowrap; }
+ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 8px 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: 2px 0 10px 40px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 13px; background: rgba(227,168,43,.16); color: var(--gold); font-family: 'Inter Display'; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 11pt; }
+ul { margin: 4px 0 10px; padding-left: 18px; }
+ul li { margin-bottom: 4px; }
+ul li::marker { color: var(--gold); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.grid2 .card, .grid3 .card { margin: 0; }
+.tag { font-size: 7.8pt; letter-spacing: .2em; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.big { font-family: 'Inter Display'; font-weight: 800; font-size: 22pt; color: var(--white); line-height: 1.1; margin: 2px 0 4px; }
+.name { font-family: 'Inter Display'; font-weight: 800; font-size: 13pt; color: var(--white); margin: 2px 0 6px; }
+.small { font-size: 9pt; }
+.fig svg { width: 100%; height: auto; display: block; border-radius: 10px; }
+.cap { font-size: 8.5pt; color: var(--muted); margin: 6px 0 10px; }
+.toc { list-style: none; padding: 0; margin: 6px 0; }
+.toc li { display: flex; gap: 14px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.toc .n { font-family: 'Inter Display'; font-weight: 800; color: var(--gold); font-size: 13pt; width: 28px; }
+.toc .t { color: var(--white); font-weight: 600; }
+.toc .d { color: var(--muted); font-size: 9pt; display: block; font-weight: 400; }
+.check { list-style: none; padding: 0; margin: 4px 0; }
+.check li { position: relative; padding: 5px 0 5px 28px; border-bottom: 1px solid var(--line); }
+.check li::before { content: ''; position: absolute; left: 0; top: 7px; width: 14px; height: 14px; border: 1.5px solid var(--gold); border-radius: 3px; }
+.calc td { font-variant-numeric: tabular-nums; }
+.calc td.r { text-align: right; white-space: nowrap; }
+.calc tr.tot td { border-top: 1px solid var(--gold); color: var(--white); font-weight: 600; }
+/* cover */
+.cover { padding: 26mm 20mm; display: flex; flex-direction: column; justify-content: space-between; background:
+  radial-gradient(circle at 85% 8%, rgba(227,168,43,.16), transparent 45%), var(--bg); }
+.cover h1 { font-size: 44pt; font-weight: 800; line-height: 1.02; letter-spacing: -.02em; }
+.cover .line { width: 70px; height: 4px; background: var(--white); margin-bottom: 22px; }
+.cover .sub { font-size: 13pt; color: var(--text); max-width: 140mm; margin-top: 18px; line-height: 1.5; }
+.cover .art { position: absolute; right: -6mm; top: 48mm; width: 118mm; opacity: .6; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="page cover">
+  <div class="kicker" style="font-size:11pt">Bull Army</div>
+  <svg class="art" viewBox="0 0 400 320">
+    <!-- shield -->
+    <path d="M200 20 L330 62 V150 C330 228 270 278 200 302 C130 278 70 228 70 150 V62 Z" fill="rgba(227,168,43,.08)" stroke="#E3A82B" stroke-width="4"/>
+    <path d="M200 52 L302 85 V152 C302 212 256 250 200 270 C144 250 98 212 98 152 V85 Z" fill="none" stroke="#E3A82B" stroke-opacity=".35" stroke-width="2"/>
+    <!-- three stacked blocks = capital split -->
+    <rect x="140" y="112" width="120" height="30" rx="5" fill="#E3A82B" fill-opacity=".85"/>
+    <rect x="140" y="150" width="72" height="30" rx="5" fill="#4C8DF6" fill-opacity=".8"/>
+    <rect x="140" y="188" width="96" height="30" rx="5" fill="#26C281" fill-opacity=".8"/>
+    <text x="268" y="133" font-family="Inter" font-weight="600" font-size="16" fill="#F4F4F5">50%</text>
+    <text x="220" y="171" font-family="Inter" font-weight="600" font-size="16" fill="#F4F4F5">20%</text>
+    <text x="244" y="209" font-family="Inter" font-weight="600" font-size="16" fill="#F4F4F5">30%</text>
+  </svg>
+  <div style="position:relative">
+    <div class="line"></div>
+    <h1>Cómo proteger<br>tu capital<br>en cripto</h1>
+    <div class="sub">Repartir el dinero entre exchanges, cuidar tus wallets, evitar rendimientos imposibles, dejar de apostar con tu tamaño real y reducir el riesgo con coberturas.</div>
+  </div>
+  <div style="font-size:9pt;color:var(--muted)">Material educativo · Bull Army · Basado en el vídeo «Cómo proteger tu capital en cripto»</div>
+</section>
+
+<!-- ============ INDEX ============ -->
+<section class="page">
+  <div class="kicker">Antes de empezar</div>
+  <h2>La idea de esta guía</h2><div class="rule"></div>
+  <p class="lead">Ganar dinero en cripto importa, pero <strong>no perderlo importa más</strong>. Algún día un exchange va a fallar, una wallet va a tener una brecha o una plataforma va a prometer lo imposible. Esta guía junta las reglas para que, cuando eso pase, no te lleve todo tu capital.</p>
+
+  <ul class="toc">
+    <li><span class="n">01</span><span><span class="t">Repartí tu capital entre exchanges</span><span class="d">Nunca todo en un solo lugar, y en la cuenta de perpetuos solo lo que necesitás.</span></span></li>
+    <li><span class="n">02</span><span><span class="t">Dale un propósito a cada cuenta</span><span class="d">Cuenta principal, cuenta para shortear basura y cuenta para probar y recopilar datos.</span></span></li>
+    <li><span class="n">03</span><span><span class="t">Seguridad de wallets y navegador</span><span class="d">Wallets simples, sin conexiones extra, y un navegador solo para cripto.</span></span></li>
+    <li><span class="n">04</span><span><span class="t">Cuidado con el staking y los rendimientos</span><span class="d">Si el porcentaje no tiene sentido, el problema sos vos o tus fondos.</span></span></li>
+    <li><span class="n">05</span><span><span class="t">Dejá de apostar con tu tamaño real</span><span class="d">Experimentos en pequeño, diario de trading y tamaño según confluencias.</span></span></li>
+    <li><span class="n">06</span><span><span class="t">Coberturas: pares, cestas y funding</span><span class="d">Exponerte al mercado sin apostar en una sola dirección.</span></span></li>
+    <li><span class="n">07</span><span><span class="t">Evitá los exchanges B-book</span><span class="d">Cuando la casa es tu contraparte, juega en tu contra.</span></span></li>
+  </ul>
+
+  <div class="card hl" style="margin-top:18px">
+    <div class="kicker" style="margin-bottom:6px">La regla que está debajo de todo</div>
+    <p style="margin:0;font-size:11pt"><strong>Sentido común.</strong> Si algo no tiene sentido —un rendimiento, una wallet con funciones raras, una plataforma que nunca muestra auditorías— no pongas tu dinero ahí.</p>
+  </div>
+  <div class="note">Los exchanges y plataformas que aparecen (Hyperliquid, Binance, Variational…) son <strong>ejemplos</strong> del vídeo, no recomendaciones ni referidos. Lo importante es el método, no el nombre.</div>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>02</span></div>
+</section>
+
+<!-- ============ 01 SPLIT ============ -->
+<section class="page">
+  <div class="kicker">01 · Diversificar plataformas</div>
+  <h2>Repartí tu capital entre exchanges</h2><div class="rule"></div>
+  <p class="lead">Aunque operes casi siempre en uno, <strong>tené cuenta en más de un exchange</strong> y repartí el dinero. El día que uno falle —y ese día llega— solo se queda atrapada una parte.</p>
+
+  <div class="fig"><svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <rect width="760" height="210" rx="10" fill="#0F0F12"/>
+    <text x="24" y="34" font-size="12" font-weight="600" fill="#8E8E96" letter-spacing="2">EJEMPLO DE REPARTO DEL CAPITAL</text>
+    <rect x="24" y="52" width="330" height="56" rx="6" fill="#E3A82B"/>
+    <rect x="358" y="52" width="170" height="56" rx="6" fill="#4C8DF6"/>
+    <rect x="532" y="52" width="204" height="56" rx="6" fill="#26C281"/>
+    <text x="40" y="87" font-size="20" font-weight="700" fill="#0A0A0B">50% · Exchange principal</text>
+    <text x="372" y="87" font-size="20" font-weight="700" fill="#0A0A0B">20% · DEX</text>
+    <text x="546" y="87" font-size="20" font-weight="700" fill="#0A0A0B">30% · Liquidez</text>
+    <text x="40" y="138" font-size="13" font-weight="600" fill="#F4F4F5">p. ej. Hyperliquid</text>
+    <text x="40" y="158" font-size="12" fill="#8E8E96">Tu forma habitual de operar</text>
+    <text x="372" y="138" font-size="13" font-weight="600" fill="#F4F4F5">p. ej. Variational</text>
+    <text x="372" y="158" font-size="12" fill="#8E8E96">Muchas monedas</text>
+    <text x="372" y="176" font-size="12" fill="#8E8E96">Shorts a pumps basura</text>
+    <text x="546" y="138" font-size="13" font-weight="600" fill="#F4F4F5">p. ej. Binance</text>
+    <text x="546" y="158" font-size="12" fill="#8E8E96">Mucha liquidez</text>
+    <text x="546" y="176" font-size="12" fill="#8E8E96">Probar ideas, recopilar datos</text>
+  </svg></div>
+  <p class="cap">Los porcentajes son un ejemplo. Lo que importa es que ningún fallo de una sola plataforma te deje sin nada.</p>
+
+  <h3>En la cuenta de perpetuos, solo lo que necesitás</h3>
+  <p>No hacen falta <strong>10.000 $</strong> en la cuenta para operar con <strong>500 $</strong> de margen. El dinero que no usás para tradear puede quedarse fuera de la cuenta de perpetuos (o fuera del exchange). Así, si algo sale mal en esa plataforma, lo expuesto es menos.</p>
+  <div class="grid2">
+    <div class="card good">
+      <div class="tag">Ventaja</div>
+      <p class="small">Menos dinero expuesto al riesgo de la plataforma y a una liquidación que se coma toda la cuenta.</p>
+    </div>
+    <div class="card bad">
+      <div class="tag">Lo que exige</div>
+      <p class="small">Una gestión de riesgo más estricta: no tenés margen extra para aguantar drawdowns grandes. Pero si sabés tradear, <strong>no deberían liquidarte</strong> de entrada.</p>
+    </div>
+  </div>
+
+  <h3>Más confianza, más capital</h3>
+  <p>Depositá más o menos según la confianza que te da cada plataforma: solvencia demostrada, auditorías, historial y facilidad para retirar. Ninguna merece confianza ciega; revisalo de vez en cuando, porque lo que hoy es solvente mañana puede no serlo.</p>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>03</span></div>
+</section>
+
+<!-- ============ 02 PURPOSE ============ -->
+<section class="page">
+  <div class="kicker">02 · Una función por cuenta</div>
+  <h2>Dale un propósito a cada cuenta</h2><div class="rule"></div>
+  <p class="lead">Repartir no es solo dividir: cada cuenta puede cumplir una función distinta, y entre ellas se cubren.</p>
+
+  <div class="grid3">
+    <div class="card hl">
+      <div class="tag">Cuenta principal · 50%</div>
+      <div class="name">Tu trading de siempre</div>
+      <p class="small">Si sos scalper, scalping. Si sos de swing, swing. Si operás intradía, intradía. Acá no se cambia nada: es tu sistema.</p>
+    </div>
+    <div class="card" style="border-color:rgba(76,141,246,.6)">
+      <div class="tag">Cuenta DEX · 20%</div>
+      <div class="name">Shortear basura</div>
+      <p class="small">Un exchange con muchas monedas listadas tiene mucha basura. Y la basura que sube, suele bajar. Esta cuenta funciona como cobertura de la principal.</p>
+    </div>
+    <div class="card good">
+      <div class="tag">Cuenta de liquidez · 30%</div>
+      <div class="name">Probar y aprender</div>
+      <p class="small">Operar perpetuos parecido a la principal, o probar estrategias y trades que normalmente no tomarías, con pérdidas más chicas.</p>
+    </div>
+  </div>
+
+  <h3>Por qué shortear pumps sin sentido</h3>
+  <p>La mayoría de las veces (en el vídeo se habla de un 90%) las subidas bruscas en monedas pequeñas <strong>no son orgánicas</strong>: son pumps para liquidar a otros o para que un grupo venda al retail que entra tarde. Después del pump, el precio suele volver.</p>
+  <p>Hacia abajo pasa menos: cuando una moneda se hunde suele haber un motivo real (scam, hackeo, un problema serio). Por eso <strong>es más rentable shortear los pumps falsos</strong> que intentar comprar los desplomes.</p>
+
+  <h3>La cuenta de pruebas no es para apostar</h3>
+  <p>Tener menos capital ahí no significa jugar al casino. Significa <strong>recopilar información</strong>. Ejemplo: el precio lleva dos días pumpeando a las 17:00. Quizás el tercer día lo repita. Sin otra confluencia no sería un buen trade para tu cuenta principal, pero en la cuenta chica podés probarlo con poco riesgo y anotarlo.</p>
+
+  <div class="card">
+    <div class="kicker" style="margin-bottom:6px">El objetivo: un diario con categorías</div>
+    <p>Con el tiempo vas a tener docenas de operaciones anotadas y agrupadas por tipo de setup. Por cada categoría podés medir:</p>
+    <table style="margin:4px 0 6px">
+      <tr><td class="k">Win rate</td><td>Qué porcentaje de esas operaciones gana.</td></tr>
+      <tr><td class="k">Esperanza</td><td>Cuánto ganás o perdés en promedio por operación.</td></tr>
+      <tr><td class="k">Sharpe</td><td>Cuánto rinde en relación con lo que oscila (lo estable que es).</td></tr>
+    </table>
+    <p>Con eso explotás los setups más rentables y <strong>sacás de tu sistema los que no lo son</strong>. Un setup rentable, aunque gane poco, se sigue tomando.</p>
+  </div>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>04</span></div>
+</section>
+
+<!-- ============ 03 WALLETS ============ -->
+<section class="page">
+  <div class="kicker">03 · Wallets y navegador</div>
+  <h2>Seguridad de wallets y navegador</h2><div class="rule"></div>
+  <p class="lead">Una wallet es un sistema muy sencillo: hace <strong>una sola función</strong> y la tiene que hacer bien. Todo lo que le agregues de más es una puerta de entrada.</p>
+
+  <h3>Antes de elegir una wallet (hard o hot)</h3>
+  <ol class="steps">
+    <li><strong>Investigá su historial:</strong> filtraciones previas, brechas de seguridad, hackeos conocidos.</li>
+    <li><strong>Buscá actividad sospechosa</strong> o cosas que no tengan sentido en cómo funciona.</li>
+    <li><strong>Preferí lo simple:</strong> evitá modelos con Bluetooth u otras conexiones inalámbricas. Lo ideal es que solo se conecte por cable al ordenador o al móvil.</li>
+  </ol>
+  <div class="note">El riesgo de una conexión extra no es solo un ataque por internet: alguien cerca de vos puede intentar aprovecharla. Cada conexión de más aumenta la probabilidad de que te roben los fondos.</div>
+
+  <h3>Un navegador para cripto y otro para todo lo demás</h3>
+  <div class="grid2">
+    <div class="card bad">
+      <div class="tag">Navegador de uso diario</div>
+      <div class="name">Nada de wallets</div>
+      <p class="small">YouTube, Twitch, Kick, redes, descargas… Acá <strong>no</strong> instales MetaMask, Rabby ni ninguna hot wallet.</p>
+    </div>
+    <div class="card good">
+      <div class="tag">Navegador solo cripto</div>
+      <div class="name">Privado y limpio</div>
+      <p class="small">Un navegador más privado (por ejemplo Brave o Zen) usado <strong>solo</strong> para wallets y exchanges.</p>
+    </div>
+  </div>
+  <p style="margin-top:12px">El peligro no es tanto que hackeen la extensión, sino que <strong>descargues algo</strong> que busque las cookies o las sesiones guardadas en tu navegador. Separarlo no lo hace imposible, pero se lo pone mucho más difícil.</p>
+
+  <h3>Configuración del navegador de cripto</h3>
+  <ul class="check">
+    <li>Que <strong>no guarde cookies</strong> ni historial.</li>
+    <li>Que <strong>borre todo al cerrarse</strong>.</li>
+    <li>Si hace falta, volvé a importar la wallet cada vez que la necesites.</li>
+    <li>No navegues por otras páginas desde ahí.</li>
+  </ul>
+  <p class="cap" style="margin-top:10px">Hasta dónde llegar con la seguridad lo decide cada uno. Esto son recomendaciones; cuanto más lejos vayas, más difícil se lo ponés a quien quiera robarte.</p>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>05</span></div>
+</section>
+
+<!-- ============ 04 STAKING ============ -->
+<section class="page">
+  <div class="kicker">04 · Staking y rendimientos</div>
+  <h2>Cuidado con los rendimientos imposibles</h2><div class="rule"></div>
+  <p class="lead">Las plataformas que pagan un porcentaje por dejar tu dinero en staking funcionan, para entenderlo fácil, como una <strong>renta fija</strong>. Y la primera defensa de tu dinero es el sentido común.</p>
+
+  <div class="fig"><svg viewBox="0 0 760 150" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <rect width="760" height="150" rx="10" fill="#0F0F12"/>
+    <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#26C281"/><stop offset=".33" stop-color="#E3A82B"/><stop offset=".6" stop-color="#F0465A"/><stop offset="1" stop-color="#8B1E2D"/></linearGradient></defs>
+    <rect x="30" y="56" width="700" height="18" rx="9" fill="url(#g)"/>
+    <line x1="230" x2="230" y1="48" y2="82" stroke="#F4F4F5" stroke-width="2"/>
+    <text x="30" y="40" font-size="12" font-weight="600" fill="#8E8E96" letter-spacing="2">RENDIMIENTO ANUAL PROMETIDO</text>
+    <text x="30" y="102" font-size="14" font-weight="700" fill="#26C281">0–8%</text>
+    <text x="30" y="122" font-size="11.5" fill="#8E8E96">Razonable si la plataforma</text>
+    <text x="30" y="138" font-size="11.5" fill="#8E8E96">es solvente</text>
+    <text x="230" y="102" font-size="14" font-weight="700" fill="#E3A82B" text-anchor="middle">8–10%</text>
+    <text x="230" y="122" font-size="11.5" fill="#8E8E96" text-anchor="middle">Límite: empezá a</text>
+    <text x="230" y="138" font-size="11.5" fill="#8E8E96" text-anchor="middle">desconfiar</text>
+    <text x="430" y="102" font-size="14" font-weight="700" fill="#F0465A" text-anchor="middle">30% · 100%</text>
+    <text x="430" y="122" font-size="11.5" fill="#8E8E96" text-anchor="middle">¿De dónde sale ese dinero?</text>
+    <text x="730" y="102" font-size="14" font-weight="700" fill="#F0465A" text-anchor="end">1.000%</text>
+    <text x="730" y="122" font-size="11.5" fill="#8E8E96" text-anchor="end">Están haciendo algo raro</text>
+    <text x="730" y="138" font-size="11.5" fill="#8E8E96" text-anchor="end">con tus fondos</text>
+  </svg></div>
+
+  <h3>Antes de poner algo en staking, comprobá</h3>
+  <ol class="steps">
+    <li><strong>Que la plataforma tenga fondos suficientes</strong> para devolverte el dinero si hay una catástrofe.</li>
+    <li><strong>Que el porcentaje tenga sentido.</strong> Por encima de un 8–10% anual ya hay indicios de que hacen algo raro detrás con tus fondos.</li>
+    <li><strong>De dónde sale el rendimiento.</strong> Existen formas reales (pools de liquidez, cobrar comisiones de plataformas…), pero no son tan fáciles como «depositá y te pagamos».</li>
+  </ol>
+  <div class="note">Que puedas retirar en cualquier momento <strong>no cambia nada</strong>: da más confianza, pero un 1.000% anual sigue sin tener sentido.</div>
+
+  <h3>Las señales de alarma</h3>
+  <div class="grid2">
+    <div class="card bad">
+      <div class="name">«Para nosotros no es nada, es gratis»</div>
+      <p class="small">Si no te explican cómo ganan dinero ellos, el producto sos vos.</p>
+    </div>
+    <div class="card bad">
+      <div class="name">Te piden convertir a su token</div>
+      <p class="small">Te obligan a pasar tus USDT o ETH a la moneda de la app. En meses ese token puede no valer nada.</p>
+    </div>
+  </div>
+  <div class="card hl">
+    <div class="kicker" style="margin-bottom:6px">El final típico</div>
+    <p style="margin:0">Metés <strong>1.000 $</strong>, te pagan «tu porcentaje» puntualmente… y cuando retirás, con el porcentaje incluido, te quedan <strong class="red">10 $</strong>, porque el token de la app se desplomó. O directamente no te devuelven las monedas congeladas.</p>
+  </div>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>06</span></div>
+</section>
+
+<!-- ============ 05 GAMBLING / SIZING ============ -->
+<section class="page">
+  <div class="kicker">05 · Tamaño de posición</div>
+  <h2>Dejá de apostar con tu tamaño real</h2><div class="rule"></div>
+  <p class="lead">Para dejar de perder en perpetuos no hay atajo: horas de pantalla hasta ser rentable. Lo que sí podés hacer desde hoy es <strong>dejar de apostar con el dinero que necesitás</strong>.</p>
+
+  <div class="grid2">
+    <div class="card bad">
+      <div class="tag">Con tu dinero real</div>
+      <p class="small" style="margin-top:4px">El que usás para comer o pagar facturas: <strong>nada de trades «a ver qué pasa»</strong>. No abras 10.000 $ con una cuenta de 5.000 $ para probar un setup.</p>
+    </div>
+    <div class="card good">
+      <div class="tag">Para experimentar</div>
+      <p class="small" style="margin-top:4px">Demo, operaciones de pocos dólares o la cuenta chica. Con el <strong>único propósito de recopilar datos</strong>.</p>
+    </div>
+  </div>
+
+  <h3>Qué anotar en cada operación</h3>
+  <p>Todo lo que se te pase por la cabeza y todo lo que tengas delante en la pantalla: el setup, la hora, los niveles en los que está todo, lo que sentiste al entrar y al salir. Cuantos más datos, mejores conclusiones vas a sacar después.</p>
+
+  <h3>El tamaño crece con las confluencias</h3>
+  <p>Una confluencia es un motivo independiente que apoya la misma idea. Cuantas más tengas, más tamaño se justifica. Ejemplo para un largo:</p>
+
+  <div class="fig"><svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <rect width="760" height="250" rx="10" fill="#0F0F12"/>
+    <!-- vwap band -->
+    <path d="M20 200 C140 196 260 186 380 168 C500 150 600 128 700 112" fill="none" stroke="#E3A82B" stroke-width="2"/>
+    <path d="M20 170 C140 166 260 156 380 138 C500 120 600 98 700 82" fill="none" stroke="#E3A82B" stroke-width="1.2" stroke-dasharray="5 5" stroke-opacity=".7"/>
+    <text x="706" y="116" font-size="11" fill="#E3A82B">VWAP</text>
+    <text x="706" y="86" font-size="11" fill="#E3A82B">+1σ</text>
+    <!-- price -->
+    <polyline points="20,186 60,176 95,184 130,160 165,150 200,172 230,160 265,134 300,124 330,146 360,136 400,108 440,96 470,118 500,110 540,82 580,70 610,90 640,80 670,52 696,44" fill="none" stroke="#F4F4F5" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- entries -->
+    <circle cx="200" cy="172" r="7" fill="#26C281"/>
+    <circle cx="330" cy="146" r="10" fill="#26C281"/>
+    <circle cx="470" cy="118" r="13" fill="#26C281"/>
+    <circle cx="610" cy="90" r="16" fill="#26C281"/>
+    <text x="200" y="204" font-size="11" fill="#D4D4D8" text-anchor="middle">1 confluencia</text>
+    <text x="330" y="180" font-size="11" fill="#D4D4D8" text-anchor="middle">2</text>
+    <text x="470" y="155" font-size="11" fill="#D4D4D8" text-anchor="middle">3</text>
+    <text x="610" y="130" font-size="11" fill="#D4D4D8" text-anchor="middle">4</text>
+    <text x="24" y="30" font-size="12" font-weight="600" fill="#8E8E96" letter-spacing="2">ENTRADAS ESCALONADAS (TAMAÑO = TAMAÑO DEL CÍRCULO)</text>
+    <text x="24" y="232" font-size="11" fill="#8E8E96">Absorción de vendedores sobre el VWAP · se mantiene sobre la banda · presión de compra en el DOM · libro vacío por arriba</text>
+  </svg></div>
+  <p class="cap">Ilustración simplificada. El tamaño concreto por confluencia lo define tu propio plan de riesgo.</p>
+
+  <table>
+    <tr><th>Confluencia</th><th>Qué ves</th></tr>
+    <tr><td class="k">Absorción</td><td>En el footprint, los shorts son absorbidos sin dejarles tocar siquiera el VWAP diario.</td></tr>
+    <tr><td class="k">Tendencia</td><td>Fuerza sobre el VWAP: cada vez que sale hacia arriba de la banda +1σ, se mantiene.</td></tr>
+    <tr><td class="k">Nivel</td><td>Un nivel que ya tenías marcado por cualquier motivo.</td></tr>
+    <tr><td class="k">DOM / libro</td><td>Mucha presión de compra, o vacían el libro por arriba y es probable un movimiento fuerte.</td></tr>
+  </table>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>07</span></div>
+</section>
+
+<!-- ============ 05b SCALING ============ -->
+<section class="page">
+  <div class="kicker">05 · Tamaño de posición</div>
+  <h2>Entrar y salir por partes</h2><div class="rule"></div>
+  <p class="lead">En vez de meter todo el riesgo en un solo punto, <strong>se va añadiendo posición</strong> mientras aparecen motivos, hasta que aparezca uno para cerrar.</p>
+
+  <div class="grid2">
+    <div class="card good">
+      <div class="tag">Para entrar</div>
+      <div class="name">Escalar dentro</div>
+      <ul class="small" style="margin:0">
+        <li>Diluís el precio de entrada.</li>
+        <li>Un retroceso no te asusta: no tenías todo dentro.</li>
+        <li>Con todas las confluencias desde el inicio, podés entrar con más tamaño de una vez.</li>
+      </ul>
+    </div>
+    <div class="card bad">
+      <div class="tag">Para salir</div>
+      <div class="name">Escalar fuera</div>
+      <ul class="small" style="margin:0">
+        <li>Lo mismo pero al revés.</li>
+        <li>Cuantas más confluencias de que va a dejar de subir (o de que va a rangear), más posición cerrás.</li>
+        <li>Si además es un buen short, puede ser la entrada contraria.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Un esquema simple para empezar</h3>
+  <table class="calc">
+    <tr><th>Confluencias</th><th>Acción</th><th style="text-align:right">Tamaño (del máximo planeado)</th></tr>
+    <tr><td class="k">0</td><td>No hay trade. Como mucho, prueba en la cuenta chica.</td><td class="r">0%</td></tr>
+    <tr><td class="k">1</td><td>Entrada pequeña o esperar.</td><td class="r">hasta 25%</td></tr>
+    <tr><td class="k">2</td><td>Se añade posición.</td><td class="r">hasta 50%</td></tr>
+    <tr><td class="k">3+</td><td>Posición completa, siempre dentro de tu riesgo máximo.</td><td class="r">hasta 100%</td></tr>
+  </table>
+  <p class="cap">Valores orientativos para ilustrar la idea; ajustalos con los datos de tu diario.</p>
+
+  <div class="card hl">
+    <div class="kicker" style="margin-bottom:6px">Lo importante</div>
+    <p style="margin:0">El tamaño no lo decide la emoción ni las ganas de recuperar. Lo deciden <strong>las confluencias</strong> y tu riesgo máximo por operación. Sin confluencias, no hay tamaño.</p>
+  </div>
+
+  <h3>Resumen de la sección</h3>
+  <ul class="check">
+    <li>Con dinero que necesitás, nunca operaciones «para ver qué pasa».</li>
+    <li>Los experimentos van a la cuenta chica o a demo, y siempre se anotan.</li>
+    <li>Más confluencias = más tamaño; menos confluencias = menos tamaño.</li>
+    <li>Se entra y se sale por partes.</li>
+  </ul>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>08</span></div>
+</section>
+
+<!-- ============ 06 HEDGES: PAIRS ============ -->
+<section class="page">
+  <div class="kicker">06 · Coberturas</div>
+  <h2>Pares long / short</h2><div class="rule"></div>
+  <p class="lead">Podés exponerte al mercado <strong>sin apostar en una sola dirección</strong>: comprar la moneda más fuerte y vender la más débil a la vez, incluso dentro de un mismo exchange.</p>
+
+  <div class="fig"><svg viewBox="0 0 760 270" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <rect width="760" height="270" rx="10" fill="#0F0F12"/>
+    <text x="24" y="30" font-size="12" font-weight="600" fill="#8E8E96" letter-spacing="2">GRÁFICO «ESPAGUETI» · RENDIMIENTO DESDE LA RUPTURA DEL RANGO</text>
+    <line x1="60" x2="612" y1="226" y2="226" stroke="rgba(255,255,255,.12)"/>
+    <text x="54" y="230" font-size="10.5" fill="#8E8E96" text-anchor="end">0%</text>
+    <line x1="60" x2="60" y1="48" y2="226" stroke="rgba(255,255,255,.12)"/>
+    <text x="60" y="246" font-size="10.5" fill="#8E8E96">ruptura</text>
+    <text x="612" y="246" font-size="10.5" fill="#8E8E96" text-anchor="end">ahora</text>
+    <g transform="translate(60,0) scale(0.86,1) translate(-60,0)">
+    <!-- grey basket -->
+    <polyline points="60,226 160,208 260,196 360,172 460,160 560,142 700,128" fill="none" stroke="#5A5A62" stroke-width="2"/>
+    <polyline points="60,226 160,214 260,190 360,182 460,150 560,148 700,134" fill="none" stroke="#5A5A62" stroke-width="2"/>
+    <polyline points="60,226 160,204 260,200 360,168 460,166 560,138 700,140" fill="none" stroke="#5A5A62" stroke-width="2"/>
+    <polyline points="60,226 160,210 260,198 360,178 460,170 560,156 700,148" fill="none" stroke="#5A5A62" stroke-width="2"/>
+    <!-- strongest -->
+    <polyline points="60,226 160,196 260,170 360,140 460,118 560,90 700,62" fill="none" stroke="#26C281" stroke-width="3"/>
+    <!-- weakest -->
+    <polyline points="60,226 160,218 260,212 360,200 460,196 560,188 700,180" fill="none" stroke="#F0465A" stroke-width="3"/>
+    </g>
+    <text x="622" y="66" font-size="12" font-weight="700" fill="#26C281">Fuerte → LONG</text>
+    <text x="622" y="184" font-size="12" font-weight="700" fill="#F0465A">Débil → SHORT</text>
+    <text x="622" y="138" font-size="11" fill="#8E8E96">resto</text>
+  </svg></div>
+  <p class="cap">Ejemplo del vídeo: tras la ruptura de un rango largo, Lighter era la más fuerte de la cesta y Solana la menos alcista (aunque seguía +23%).</p>
+
+  <h3>Cómo se arma</h3>
+  <ol class="steps">
+    <li><strong>Compará el rendimiento</strong> de varias monedas en la temporalidad que operás (últimos minutos, horas o días).</li>
+    <li><strong>Elegí la más fuerte</strong> y buscá confluencias extra: en el ejemplo, Lighter es más pequeña (sube con más facilidad) y podía recibir rotación de otras monedas como beta.</li>
+    <li><strong>Elegí la más débil.</strong> No hace falta que sea bajista: basta con que sea la <em>menos alcista</em>.</li>
+    <li><strong>Buscá entrada en las dos y abrilas a la vez</strong>: long en la fuerte, short en la débil.</li>
+  </ol>
+  <div class="grid2">
+    <div class="card">
+      <div class="tag">Si el mercado se frena</div>
+      <p class="small" style="margin-top:4px">Lo más probable es que, si la fuerte deja de subir, la débil también. Ganás en el short y <strong>no perdés tanto</strong> en el long.</p>
+    </div>
+    <div class="card">
+      <div class="tag">Para cortos</div>
+      <p class="small" style="margin-top:4px">Igual pero al revés: tu idea es bajista, así que shorteás las más flojas de la cesta y cubrís con las más fuertes.</p>
+    </div>
+  </div>
+  <p style="margin-top:12px"><strong>Cestas (baskets):</strong> en lugar de una moneda contra otra, podés hacer long a las 5 mejores y short a las 5 peores. Reparte todavía más el riesgo.</p>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>09</span></div>
+</section>
+
+<!-- ============ 06b FUNDING ============ -->
+<section class="page">
+  <div class="kicker">06 · Coberturas</div>
+  <h2>Arbitraje de funding (delta neutral)</h2><div class="rule"></div>
+  <p class="lead">Las tasas de financiación (funding) de un mismo par pueden ser <strong>muy distintas entre exchanges</strong>. Se puede cobrar esa diferencia sin depender de hacia dónde va el precio.</p>
+
+  <div class="fig"><svg viewBox="0 0 760 196" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <rect width="760" height="196" rx="10" fill="#0F0F12"/>
+    <g transform="translate(0,-8)">
+    <rect x="30" y="40" width="260" height="130" rx="10" fill="#141417" stroke="#F0465A" stroke-width="2"/>
+    <text x="160" y="72" font-size="13" font-weight="600" fill="#8E8E96" text-anchor="middle" letter-spacing="1.5">EXCHANGE A</text>
+    <text x="160" y="104" font-size="22" font-weight="800" fill="#F0465A" text-anchor="middle">SHORT 10.000 $</text>
+    <text x="160" y="132" font-size="12.5" fill="#D4D4D8" text-anchor="middle">Funding alto: los shorts</text>
+    <text x="160" y="150" font-size="12.5" fill="#D4D4D8" text-anchor="middle">cobran</text>
+    <rect x="470" y="40" width="260" height="130" rx="10" fill="#141417" stroke="#26C281" stroke-width="2"/>
+    <text x="600" y="72" font-size="13" font-weight="600" fill="#8E8E96" text-anchor="middle" letter-spacing="1.5">EXCHANGE B</text>
+    <text x="600" y="104" font-size="22" font-weight="800" fill="#26C281" text-anchor="middle">LONG 10.000 $</text>
+    <text x="600" y="132" font-size="12.5" fill="#D4D4D8" text-anchor="middle">Funding casi cero:</text>
+    <text x="600" y="150" font-size="12.5" fill="#D4D4D8" text-anchor="middle">cuesta muy poco</text>
+    <text x="380" y="96" font-size="30" font-weight="800" fill="#E3A82B" text-anchor="middle">⇄</text>
+    <text x="380" y="124" font-size="12" font-weight="600" fill="#E3A82B" text-anchor="middle">Δ = 0</text>
+    <text x="380" y="196" font-size="12" fill="#8E8E96" text-anchor="middle">Si el precio sube, ganás en B lo que perdés en A. Si baja, al revés. Te quedás con el funding.</text>
+    </g>
+  </svg></div>
+
+  <h3>Cómo funciona</h3>
+  <ol class="steps">
+    <li>Buscá un par cuyo funding sea alto en un exchange y casi cero en otro.</li>
+    <li>Abrí <strong>el mismo tamaño</strong> en las dos patas: short donde los shorts cobran, long donde cuesta poco.</li>
+    <li>Quedás <strong>delta neutral</strong>: el precio deja de importarte. Cobrás el funding y solo pagás las comisiones de abrir y cerrar.</li>
+  </ol>
+
+  <h3>Ejemplo con números (hipotéticos)</h3>
+  <table class="calc">
+    <tr><th>Concepto</th><th style="text-align:right">Importe</th></tr>
+    <tr><td>Tamaño por pata</td><td class="r">10.000 $</td></tr>
+    <tr><td>Funding cobrado en el short: 0,05% × 3 periodos al día</td><td class="r">+15 $ / día</td></tr>
+    <tr><td>Funding pagado en el long: ~0%</td><td class="r">0 $ / día</td></tr>
+    <tr><td>Comisiones: 4 ejecuciones (abrir y cerrar cada pata) × 0,045%</td><td class="r">−18 $ una vez</td></tr>
+    <tr class="tot"><td>Resultado si el funding se mantiene 7 días</td><td class="r">+87 $</td></tr>
+  </table>
+  <p class="cap">Números inventados para entender la mecánica: el funding cambia todo el tiempo y cada exchange cobra en periodos distintos.</p>
+
+  <div class="card bad">
+    <div class="tag">Riesgos que hay que vigilar</div>
+    <ul class="small" style="margin:6px 0 0">
+      <li><strong>Liquidación de una pata:</strong> si el precio se mueve fuerte, una de las dos puede liquidarse aunque el total esté neutral. Dejá margen suficiente en ambas.</li>
+      <li><strong>El funding se da vuelta:</strong> si la diferencia desaparece, cerrá antes de que las comisiones se coman la ganancia.</li>
+      <li><strong>Riesgo de plataforma:</strong> tenés dinero en dos exchanges; aplica la sección 01.</li>
+    </ul>
+  </div>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>10</span></div>
+</section>
+
+<!-- ============ 07 B-BOOK ============ -->
+<section class="page">
+  <div class="kicker">07 · Elegir dónde operar</div>
+  <h2>Evitá los exchanges B-book</h2><div class="rule"></div>
+  <p class="lead">En un exchange <strong>B-book</strong> el libro de órdenes es cerrado: no hay market makers externos, la propia plataforma pone la liquidez y <strong>es tu contraparte</strong>. La casa tradea contra vos.</p>
+
+  <div class="fig"><svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif">
+    <rect width="760" height="220" rx="10" fill="#0F0F12"/>
+    <!-- left: open book -->
+    <text x="190" y="32" font-size="12" font-weight="700" fill="#26C281" text-anchor="middle" letter-spacing="1.5">LIBRO ABIERTO · MARKET MAKERS</text>
+    <circle cx="190" cy="115" r="34" fill="#141417" stroke="#26C281" stroke-width="2"/>
+    <text x="190" y="112" font-size="11.5" font-weight="600" fill="#F4F4F5" text-anchor="middle">Libro de</text>
+    <text x="190" y="127" font-size="11.5" font-weight="600" fill="#F4F4F5" text-anchor="middle">órdenes</text>
+    <g font-size="11" fill="#D4D4D8" text-anchor="middle">
+      <rect x="40" y="56" width="74" height="26" rx="6" fill="#1B1B1F"/><text x="77" y="73">Vos</text>
+      <rect x="266" y="56" width="84" height="26" rx="6" fill="#1B1B1F"/><text x="308" y="73">Traders</text>
+      <rect x="40" y="148" width="74" height="26" rx="6" fill="#1B1B1F"/><text x="77" y="165">MM 1</text>
+      <rect x="266" y="148" width="84" height="26" rx="6" fill="#1B1B1F"/><text x="308" y="165">MM 2</text>
+    </g>
+    <g stroke="#26C281" stroke-width="1.5"><line x1="114" y1="74" x2="162" y2="98"/><line x1="266" y1="74" x2="218" y2="98"/><line x1="114" y1="158" x2="162" y2="134"/><line x1="266" y1="158" x2="218" y2="134"/></g>
+    <text x="190" y="204" font-size="11" fill="#8E8E96" text-anchor="middle">Muchos participantes compiten por darte liquidez</text>
+    <!-- divider -->
+    <line x1="380" x2="380" y1="24" y2="200" stroke="#2A2A2F"/>
+    <!-- right: b-book -->
+    <text x="570" y="32" font-size="12" font-weight="700" fill="#F0465A" text-anchor="middle" letter-spacing="1.5">B-BOOK · LA CASA ES TU CONTRAPARTE</text>
+    <rect x="430" y="96" width="80" height="36" rx="8" fill="#1B1B1F"/><text x="470" y="119" font-size="12" fill="#D4D4D8" text-anchor="middle">Vos</text>
+    <rect x="620" y="86" width="110" height="56" rx="8" fill="#141417" stroke="#F0465A" stroke-width="2"/>
+    <text x="675" y="110" font-size="12" font-weight="700" fill="#F4F4F5" text-anchor="middle">Exchange</text>
+    <text x="675" y="127" font-size="10.5" fill="#F0465A" text-anchor="middle">+ algoritmo</text>
+    <line x1="510" y1="114" x2="620" y2="114" stroke="#F0465A" stroke-width="2"/>
+    <text x="565" y="106" font-size="11" fill="#F0465A" text-anchor="middle">tu orden</text>
+    <text x="570" y="204" font-size="11" fill="#8E8E96" text-anchor="middle">Tu pérdida es su ganancia</text>
+  </svg></div>
+
+  <h3>Cómo te perjudica</h3>
+  <p>No es alguien apretando un botón: es un algoritmo automático. Si querés abrir un long grande, el sistema puede <strong>adelantarse a tu orden</strong> (front-running): entra antes donde vos querías entrar, a vos te ejecuta más arriba o más abajo, y después le vende su posición contra la tuya.</p>
+  <table>
+    <tr><th>Práctica</th><th>Qué sentís vos</th></tr>
+    <tr><td class="k">Spreads abusivos</td><td>Pagás de más en cada entrada y salida.</td></tr>
+    <tr><td class="k">Deslizamiento</td><td>Tu orden se ejecuta lejos del precio que viste (slippage).</td></tr>
+    <tr><td class="k">Ejecución lenta</td><td>Te quitan velocidad o prioridad de entrada.</td></tr>
+    <tr><td class="k">Front-running</td><td>Siempre entrás peor que «alguien».</td></tr>
+  </table>
+  <div class="note">En un exchange con market makers normales esto no pasa, o no en esta medida: ellos ganan poniendo liquidez, no abusando de vos. Si moviera muchísimo volumen, todo el mercado iría a por tu orden, pero ese no es el caso de casi nadie que lea esta guía.</div>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>11</span></div>
+</section>
+
+<!-- ============ CHECKLIST ============ -->
+<section class="page">
+  <div class="kicker">Resumen</div>
+  <h2>Checklist para proteger tu capital</h2><div class="rule"></div>
+  <p class="lead">Repasala cada vez que deposites en una plataforma nueva o cambies cómo operás.</p>
+
+  <h3>Plataformas</h3>
+  <ul class="check">
+    <li>Tengo cuenta en <strong>más de un exchange</strong> y mi capital está repartido.</li>
+    <li>En la cuenta de perpetuos tengo <strong>solo lo que necesito</strong> para operar.</li>
+    <li>Deposito más donde hay <strong>auditorías</strong> que demuestran solvencia y capacidad de pago ante una catástrofe.</li>
+    <li>No opero en exchanges <strong>B-book</strong> donde la casa es mi contraparte.</li>
+  </ul>
+
+  <h3>Wallets y seguridad</h3>
+  <ul class="check">
+    <li>Investigué el historial de brechas de mi wallet antes de usarla.</li>
+    <li>Mi wallet no tiene Bluetooth ni conexiones extra innecesarias.</li>
+    <li>Uso un <strong>navegador solo para cripto</strong>, sin cookies y que borra todo al cerrar.</li>
+  </ul>
+
+  <h3>Rendimientos</h3>
+  <ul class="check">
+    <li>No pongo dinero en staking que prometa más de un <strong>8–10% anual</strong> sin saber de dónde sale.</li>
+    <li>No convierto mis monedas al token de una app para cobrar un «interés».</li>
+  </ul>
+
+  <h3>Trading</h3>
+  <ul class="check">
+    <li>Mis experimentos van a la cuenta chica o a demo, nunca al dinero que necesito.</li>
+    <li>Anoto <strong>todo</strong> en mi diario y mido win rate, esperanza y Sharpe por categoría.</li>
+    <li>Mi tamaño depende de las <strong>confluencias</strong>, y entro y salgo por partes.</li>
+    <li>Cuando puedo, reduzco la exposición direccional con <strong>pares, cestas o arbitraje de funding</strong>.</li>
+  </ul>
+
+  <div class="card hl" style="margin-top:18px">
+    <div class="kicker" style="margin-bottom:6px">Recordá</div>
+    <p style="margin:0;font-size:11pt"><strong>Sentido común.</strong> Si no tenés sentido común con tu dinero, alguien te lo va a quitar.</p>
+  </div>
+  <p style="font-size:8.5pt;color:var(--muted);margin-top:18px">Aviso: este material es educativo y no constituye recomendación de inversión. Los exchanges, wallets y monedas mencionados son ejemplos, no recomendaciones. Operar con derivados y criptomonedas implica riesgo de pérdida total del capital. Los resultados pasados no garantizan resultados futuros.</p>
+  <div class="footer"><span>BULL ARMY · Cómo proteger tu capital en cripto</span><span>12</span></div>
+</section>
+
+</body>
+</html>
