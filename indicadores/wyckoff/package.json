@@ -5,9 +5,16 @@
   "description": "Indicador Wyckoff (Pine Script v6) probado con PineTS y visualizado con Vela de LuxAlgo",
   "type": "module",
   "scripts": {
-    "test": "node test/run-pinets.mjs -v"
+    "test": "node test/run-pinets.mjs -v",
+    "demo": "vite demo",
+    "build:demo": "vite build demo --outDir ../dist-demo --emptyOutDir"
+  },
+  "dependencies": {
+    "@luxalgo/vela": "^0.8.2",
+    "@luxalgo/vela-pinets": "^0.2.15",
+    "pinets": "^0.11.0"
   },
   "devDependencies": {
-    "pinets": "^0.11.0"
+    "vite": "^7.0.0"
   }
 }

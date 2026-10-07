@@ -151,6 +151,10 @@ var int   cLIdx   = 0          // dibujos creados desde el evento de la Fase C (
 var int   cNIdx   = 0
 var float bUpExt  = na         // extremos de las sacudidas de Fase B ya etiquetadas
 var float bDnExt  = na
+var label bUpLbl  = na
+var label bDnLbl  = na
+var int   bUpBar  = na
+var int   bDnBar  = na
 // PS / PSY potenciales
 var int   psBar    = na
 var float psPrice  = na
@@ -197,6 +201,10 @@ trimTo(array<label> ls, array<line> ln, int li, int ni) =>
             line.delete(ln.pop())
     nl + nn
 
+// Nombres de fase del lado opuesto a los eventos dominantes (arriba en rangos tras caída, abajo tras subida)
+phaseY(int d, float t, float b) =>
+    d == 1 ? t - 0.08 * (t - b) : b + 0.08 * (t - b)
+
 biasColor(int b) =>
     b == 1 ? bullCol : b == -1 ? bearCol : neutCol
 
@@ -239,8 +247,8 @@ if st == 1
     if st == 1 and finish == 0 and bar_index - climaxStart > maxWait
         finish := 2
 
-// ─────────────────────────────── Fase A: AR → ST ───────────────────────────────
 else if st == 2
+    // ── Fase A: AR → ST
     float h = top - bot
     bool stOk = false
     if dir == 1
@@ -268,13 +276,15 @@ else if st == 2
         exDir  := 0
         bUpExt := na
         bDnExt := na
+        bUpBar := na
+        bDnBar := na
         lastPLBar := na
         lastPHBar := na
         sLabels.clear()
         sLines.clear()
         bool climaxIsVol = climaxRv >= climaxMult
         if showBox
-            rBox := box.new(climaxBar, top, bar_index, bot, border_color = color.new(neutCol, 50), border_width = 1, bgcolor = color.new(neutCol, 90), text = typeName(dir, 0), text_size = size.small, text_color = color.new(neutCol, 0), text_halign = text.align_left, text_valign = text.align_top)
+            rBox := box.new(climaxBar, top, bar_index, bot, border_color = color.new(neutCol, 50), border_width = 1, bgcolor = color.new(neutCol, 90), text = typeName(dir, 0), text_size = size.small, text_color = color.new(neutCol, 0), text_halign = text.align_center, text_valign = text.align_top)
         topLn := line.new(dir == 1 ? arBar : climaxBar, top, bar_index, top, color = resCol, width = 2)
         botLn := line.new(dir == 1 ? climaxBar : arBar, bot, bar_index, bot, color = supCol, width = 2)
         if dir == 1
@@ -291,14 +301,14 @@ else if st == 2
             sLabels.push(mkLabel(pivBar, ph, "ST", true, neutCol, TIP_ST))
         if showPhases
             float pad = 0.08 * (top - bot)
-            sLabels.push(label.new(climaxBar, top + pad, "Fase A", style = label.style_none, textcolor = neutCol, size = size.small))
+            sLabels.push(label.new(climaxBar, phaseY(dir, top, bot), "Fase A", style = label.style_none, textcolor = neutCol, size = size.small))
             sLines.push(line.new(bStart, top + pad, bStart, bot - pad, color = color.new(neutCol, 30), style = line.style_dotted))
-            sLabels.push(label.new(bStart, top + pad, "Fase B", style = label.style_none, textcolor = neutCol, size = size.small))
+            sLabels.push(label.new(bStart, phaseY(dir, top, bot), "Fase B", style = label.style_none, textcolor = neutCol, size = size.small))
         lastEvent    := "ST"
         lastEventBar := pivBar
 
-// ─────────────────────────────── Fases B, C y D dentro del rango ───────────────────────────────
 else if st == 3
+    // ── Fases B, C y D dentro del rango
     float mid = (top + bot) / 2
     float pad = 0.08 * (top - bot)
     // La Fase B (construcción de la causa) suele ser la más larga: antes de madurar, las sacudidas son UA/UT o ST as SOW/mSOW
@@ -330,7 +340,7 @@ else if st == 3
             phase := 4
             if showPhases
                 sLines.push(line.new(bar_index, top + pad, bar_index, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
-                sLabels.push(label.new(bar_index, top + pad, "Fase D", style = label.style_none, textcolor = bullCol, size = size.small))
+                sLabels.push(label.new(bar_index, phaseY(dir, top, bot), "Fase D", style = label.style_none, textcolor = bullCol, size = size.small))
     else if bias == -1
         if not na(ph) and pivBar > cBar and ph < cPrice and ph <= top + 0.5 * atr
             if needTest and not tested and ph >= mid and rvPiv < cRv
@@ -350,7 +360,7 @@ else if st == 3
             phase := 4
             if showPhases
                 sLines.push(line.new(bar_index, top + pad, bar_index, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
-                sLabels.push(label.new(bar_index, top + pad, "Fase D", style = label.style_none, textcolor = bearCol, size = size.small))
+                sLabels.push(label.new(bar_index, phaseY(dir, top, bot), "Fase D", style = label.style_none, textcolor = bearCol, size = size.small))
 
     // Excursiones fuera del rango: sacudida (vuelve) o ruptura (acepta fuera)
     if exDir == 0
@@ -386,7 +396,11 @@ else if st == 3
                 if not mature
                     if na(bUpExt) or exExt > bUpExt
                         bUpExt := exExt
-                        sLabels.push(mkLabel(exBar, exExt, dir == 1 ? "UA" : "UT", true, neutCol, dir == 1 ? TIP_UA : TIP_UT))
+                        if not na(bUpBar) and exBar - bUpBar <= pivLeft
+                            label.delete(bUpLbl)
+                        bUpLbl := mkLabel(exBar, exExt, dir == 1 ? "UA" : "UT", true, neutCol, dir == 1 ? TIP_UA : TIP_UT)
+                        bUpBar := exBar
+                        sLabels.push(bUpLbl)
                         lastEvent := dir == 1 ? "UA" : "UT"
                 else
                     bias     := -1
@@ -404,7 +418,7 @@ else if st == 3
                     sLabels.push(mkLabel(exBar, exExt, "UTAD", true, bearCol, TIP_UTAD))
                     if showPhases
                         sLines.push(line.new(exBar, top + pad, exBar, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
-                        sLabels.push(label.new(exBar, top + pad, "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
+                        sLabels.push(label.new(exBar, phaseY(dir, top, bot), "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
                     lastEvent := "UTAD"
                 lastEventBar := exBar
             else if bias == -1
@@ -420,7 +434,7 @@ else if st == 3
                     sLabels.push(mkLabel(exBar, exExt, "UTAD", true, bearCol, TIP_UTAD))
                     if showPhases
                         sLines.push(line.new(exBar, top + pad, exBar, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
-                        sLabels.push(label.new(exBar, top + pad, "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
+                        sLabels.push(label.new(exBar, phaseY(dir, top, bot), "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
                     phase := 3
                     lastEvent    := "UTAD"
                     lastEventBar := exBar
@@ -436,7 +450,12 @@ else if st == 3
             if bias == -1
                 // Aceptación por encima tras el "UTAD": no era distribución. Aquella sacudida fue un UA/UT de Fase B.
                 trimTo(sLabels, sLines, cLIdx, cNIdx)
-                sLabels.push(mkLabel(cBar, cPrice, dir == 1 ? "UA" : "UT", true, neutCol, dir == 1 ? TIP_UA : TIP_UT))
+                if not na(bUpBar) and cBar - bUpBar <= pivLeft
+                    label.delete(bUpLbl)
+                bUpLbl := mkLabel(cBar, cPrice, dir == 1 ? "UA" : "UT", true, neutCol, dir == 1 ? TIP_UA : TIP_UT)
+                bUpBar := cBar
+                bUpExt := math.max(nz(bUpExt, cPrice), cPrice)
+                sLabels.push(bUpLbl)
                 bias  := 0
                 phase := 2
             if bias == 0 and not mature
@@ -452,10 +471,10 @@ else if st == 3
                         sLabels.push(mkLabel(lastPLBar, lastPLPrice, "LPS", false, bullCol, TIP_LPS))
                         if showPhases
                             sLines.push(line.new(lastPLBar, top + pad, lastPLBar, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
-                            sLabels.push(label.new(lastPLBar, top + pad, "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
+                            sLabels.push(label.new(lastPLBar, phaseY(dir, top, bot), "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
                 if phase != 4 and showPhases
                     sLines.push(line.new(bar_index, top + pad, bar_index, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
-                    sLabels.push(label.new(bar_index, top + pad, "Fase D", style = label.style_none, textcolor = bullCol, size = size.small))
+                    sLabels.push(label.new(bar_index, phaseY(dir, top, bot), "Fase D", style = label.style_none, textcolor = bullCol, size = size.small))
                 phase   := 4
                 st      := 4
                 brkBar  := bar_index
@@ -480,7 +499,11 @@ else if st == 3
                 if not mature
                     if na(bDnExt) or exExt < bDnExt
                         bDnExt := exExt
-                        sLabels.push(mkLabel(exBar, exExt, dir == 1 ? "ST as SOW" : "mSOW", false, neutCol, dir == 1 ? TIP_STSOW : TIP_MSOWm))
+                        if not na(bDnBar) and exBar - bDnBar <= pivLeft
+                            label.delete(bDnLbl)
+                        bDnLbl := mkLabel(exBar, exExt, dir == 1 ? "ST as SOW" : "mSOW", false, neutCol, dir == 1 ? TIP_STSOW : TIP_MSOWm)
+                        bDnBar := exBar
+                        sLabels.push(bDnLbl)
                         lastEvent := dir == 1 ? "ST as SOW" : "mSOW"
                 else
                     float pen = (bot - exExt) / atr
@@ -500,7 +523,7 @@ else if st == 3
                     sLabels.push(mkLabel(exBar, exExt, spTxt, false, bullCol, spTxt == "Spring #3" ? TIP_SP3 : spTxt == "Spring #2" ? TIP_SP2 : TIP_SP1))
                     if showPhases
                         sLines.push(line.new(exBar, top + pad, exBar, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
-                        sLabels.push(label.new(exBar, top + pad, "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
+                        sLabels.push(label.new(exBar, phaseY(dir, top, bot), "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
                     lastEvent := spTxt
                 lastEventBar := exBar
             else if bias == 1
@@ -519,7 +542,7 @@ else if st == 3
                     sLabels.push(mkLabel(exBar, exExt, spTxt, false, bullCol, spTxt == "Spring #3" ? TIP_SP3 : spTxt == "Spring #2" ? TIP_SP2 : TIP_SP1))
                     if showPhases
                         sLines.push(line.new(exBar, top + pad, exBar, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
-                        sLabels.push(label.new(exBar, top + pad, "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
+                        sLabels.push(label.new(exBar, phaseY(dir, top, bot), "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
                     phase := 3
                     lastEvent    := spTxt
                     lastEventBar := exBar
@@ -535,7 +558,12 @@ else if st == 3
             if bias == 1
                 // Aceptación por debajo tras el "Spring": no era acumulación. Aquella sacudida fue un ST as SOW / mSOW.
                 trimTo(sLabels, sLines, cLIdx, cNIdx)
-                sLabels.push(mkLabel(cBar, cPrice, dir == 1 ? "ST as SOW" : "mSOW", false, neutCol, dir == 1 ? TIP_STSOW : TIP_MSOWm))
+                if not na(bDnBar) and cBar - bDnBar <= pivLeft
+                    label.delete(bDnLbl)
+                bDnLbl := mkLabel(cBar, cPrice, dir == 1 ? "ST as SOW" : "mSOW", false, neutCol, dir == 1 ? TIP_STSOW : TIP_MSOWm)
+                bDnBar := cBar
+                bDnExt := math.min(nz(bDnExt, cPrice), cPrice)
+                sLabels.push(bDnLbl)
                 bias  := 0
                 phase := 2
             if bias == 0 and not mature
@@ -551,10 +579,10 @@ else if st == 3
                         sLabels.push(mkLabel(lastPHBar, lastPHPrice, "LPSY", true, bearCol, TIP_LPSY))
                         if showPhases
                             sLines.push(line.new(lastPHBar, top + pad, lastPHBar, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
-                            sLabels.push(label.new(lastPHBar, top + pad, "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
+                            sLabels.push(label.new(lastPHBar, phaseY(dir, top, bot), "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
                 if phase != 4 and showPhases
                     sLines.push(line.new(bar_index, top + pad, bar_index, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
-                    sLabels.push(label.new(bar_index, top + pad, "Fase D", style = label.style_none, textcolor = bearCol, size = size.small))
+                    sLabels.push(label.new(bar_index, phaseY(dir, top, bot), "Fase D", style = label.style_none, textcolor = bearCol, size = size.small))
                 phase   := 4
                 st      := 4
                 brkBar  := bar_index
@@ -577,8 +605,8 @@ else if st == 3
         sLines.push(line.new(bar_index, tgt, bar_index + len, tgt, color = tc, style = line.style_dashed, width = 1))
         sLabels.push(label.new(bar_index + len, tgt, "Objetivo 1:1", style = bias == 1 ? label.style_label_lower_left : label.style_label_upper_left, color = color.new(tc, 70), textcolor = color.white, size = size.tiny, tooltip = "Ley de causa y efecto: altura del rango proyectada desde la ruptura. Causa = " + str.tostring(bar_index - climaxBar) + " velas."))
 
-// ─────────────────────────────── Fase D (tras la ruptura) → Fase E ───────────────────────────────
 else if st == 4
+    // ── Fase D (tras la ruptura) → Fase E
     float h   = top - bot
     float mid = (top + bot) / 2
     float pad = 0.08 * h
@@ -623,7 +651,7 @@ else if st == 4
         lastEventBar := postBar
         if showPhases
             sLines.push(line.new(postBar, top + pad, postBar, bot - pad, color = color.new(cc, 30), style = line.style_dotted))
-            sLabels.push(label.new(postBar, top + pad, "Fase C", style = label.style_none, textcolor = cc, size = size.small))
+            sLabels.push(label.new(postBar, phaseY(dir, top, bot), "Fase C", style = label.style_none, textcolor = cc, size = size.small))
     else if bias == 1
         if close < mid
             finish := 2
@@ -706,6 +734,8 @@ if finish != 0
             box.delete(rBox)
             line.delete(topLn)
             line.delete(botLn)
+            lastEvent    := "Rango descartado (sin causa)"
+            lastEventBar := bar_index
         else if st >= 3
             if not na(rBox)
                 rBox.set_border_style(line.style_dashed)

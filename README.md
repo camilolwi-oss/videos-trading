@@ -59,3 +59,9 @@ Serie de 10 reels en 1080×1920 con la voz grabada. Cada reel vive en `src/reels
 npx remotion render Reel01 out/reels/reel-01.mp4
 npx remotion still Reel01-portada out/reels/reel-01-portada.png
 ```
+
+## Indicador Wyckoff (Pine Script + Vela/PineTS)
+
+`indicadores/wyckoff/` contiene **Wyckoff Estructuras [Villahermosa]**, un indicador Pine v6 que detecta acumulaciones, distribuciones, reacumulaciones y redistribuciones con sus fases A–E y eventos (SC, AR, ST, Spring, UTAD, SOS/JAC, LPS/LPSY…). Corre en TradingView y en [Vela](https://github.com/LuxAlgo/vela) de LuxAlgo vía [PineTS](https://github.com/LuxAlgo/PineTS). Ver su [README](indicadores/wyckoff/README.md).
+
+La base de conocimiento usada para diseñarlo es la skill `.claude/skills/villahermosa-wyckoff/`, generada con [book-to-skill](https://github.com/virgiliojr94/book-to-skill) a partir de *La Metodología Wyckoff en profundidad* (Rubén Villahermosa).
