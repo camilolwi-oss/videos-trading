@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "node test/run-pinets.mjs -v",
-    "demo": "vite demo",
-    "build:demo": "vite build demo --outDir ../dist-demo --emptyOutDir"
+    "demo": "vite",
+    "build:demo": "vite build --outDir ../dist-demo --emptyOutDir",
+    "build:pages": "vite build --outDir ../../../docs --emptyOutDir && touch ../../docs/.nojekyll"
   },
   "dependencies": {
     "@luxalgo/vela": "^0.8.2",

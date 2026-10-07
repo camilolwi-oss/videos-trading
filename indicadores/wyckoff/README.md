@@ -53,6 +53,13 @@ new VelaWorkspace('#chart', {
 });
 ```
 
+### GitHub Pages
+La demo publicada vive en `/docs` (raíz del repo): <https://camilolwi-oss.github.io/videos-trading/>. Para regenerarla después de cambiar el script:
+```bash
+npm run build:pages   # compila demo/ en ../../docs con rutas relativas
+```
+Pages se sirve con *Deploy from a branch*, carpeta `/docs`.
+
 ### Pruebas (PineTS en Node)
 ```bash
 npm test
