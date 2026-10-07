@@ -1,0 +1,13 @@
+{
+  "name": "wyckoff-estructuras",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Indicador Wyckoff (Pine Script v6) probado con PineTS y visualizado con Vela de LuxAlgo",
+  "type": "module",
+  "scripts": {
+    "test": "node test/run-pinets.mjs -v"
+  },
+  "devDependencies": {
+    "pinets": "^0.11.0"
+  }
+}

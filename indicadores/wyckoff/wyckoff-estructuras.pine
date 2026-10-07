@@ -1,0 +1,774 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// Wyckoff Estructuras — basado en "La Metodología Wyckoff en profundidad" (Rubén Villahermosa).
+// Detecta rangos de acumulación / distribución / reacumulación / redistribución, sus fases A–E
+// y los eventos del método: PS/PSY, SC/BC, AR, ST, UA/UT, ST as SOW/mSOW, Spring (#1/#2/#3),
+// UTAD, Test, LPS/LPSY, SOS/JAC, MSOW, BU/BUEC.
+// Los eventos que dependen de pivotes se dibujan con `pivRight` velas de retraso (no repinta).
+//@version=6
+indicator("Wyckoff Estructuras [Villahermosa]", shorttitle = "Wyckoff", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 200)
+
+// ─────────────────────────────── Entradas ───────────────────────────────
+grpS = "Estructura"
+pivLeft     = input.int(5, "Pivote: velas a la izquierda", minval = 1, group = grpS)
+pivRight    = input.int(3, "Pivote: velas a la derecha (confirmación)", minval = 1, group = grpS)
+trendLen    = input.int(50, "Tendencia previa (velas)", minval = 10, group = grpS)
+trendATR    = input.float(4.0, "Recorrido mínimo de la tendencia previa (ATR)", minval = 0.5, step = 0.5, group = grpS)
+minRangeATR = input.float(2.0, "Altura mínima del rango (ATR)", minval = 0.5, step = 0.25, group = grpS)
+minBBars    = input.int(15, "Duración mínima de la Fase B (velas)", minval = 3, group = grpS)
+bRel        = input.float(1.5, "Duración mínima de la Fase B (× duración de la Fase A)", minval = 0, step = 0.25, group = grpS)
+maxWait     = input.int(40, "Velas máximas para AR y ST", minval = 5, group = grpS)
+confirmBars = input.int(2, "Cierres fuera del rango para confirmar ruptura", minval = 1, group = grpS)
+reinterBars = input.int(6, "Ruptura sin sacudida que vuelve al rango en N velas = UTAD/Spring", minval = 0, group = grpS)
+bigBreakATR = input.float(1.5, "Fase A: invalida el clímax si cierra más allá (ATR)", minval = 0.25, step = 0.25, group = grpS)
+atrLen      = input.int(14, "Longitud ATR", minval = 1, group = grpS)
+
+grpV = "Volumen (esfuerzo)"
+volLen       = input.int(20, "Media de volumen y rango", minval = 5, group = grpV)
+climaxMult   = input.float(2.0, "Volumen climático SC/BC (× media)", minval = 1.0, step = 0.1, group = grpV)
+psMult       = input.float(1.5, "Volumen alto PS/PSY (× media)", minval = 1.0, step = 0.1, group = grpV)
+allowExhaust = input.bool(false, "Aceptar clímax por agotamiento (sin volumen climático)", group = grpV)
+
+grpC = "Fase C (Spring / UTAD)"
+tsoPen = input.float(1.0, "Spring #1 / TSO: penetración mínima (ATR)", minval = 0.1, step = 0.1, group = grpC)
+tsoVol = input.float(2.0, "Spring #1 / TSO: volumen mínimo (× media)", minval = 1.0, step = 0.1, group = grpC)
+sp3Vol = input.float(1.0, "Spring #3: volumen máximo (× media)", minval = 0.1, step = 0.1, group = grpC)
+
+grpD = "Visual"
+showBox     = input.bool(true, "Caja del rango", group = grpD)
+showPhases  = input.bool(true, "Separadores de fase", group = grpD)
+showTarget  = input.bool(true, "Objetivo causa/efecto (proyección vertical 1:1)", group = grpD)
+showBroken  = input.bool(false, "Mantener rangos que fallan antes de la Fase C", group = grpD)
+showTable   = input.bool(true, "Tabla de estado", group = grpD)
+colorClimax = input.bool(false, "Colorear velas de volumen climático", group = grpD)
+bullCol     = input.color(#26A69A, "Alcista", group = grpD)
+bearCol     = input.color(#EF5350, "Bajista", group = grpD)
+neutCol     = input.color(#9E9E9E, "Neutral", group = grpD)
+resCol      = input.color(#E53935, "Resistencia (Creek)", group = grpD)
+supCol      = input.color(#43A047, "Soporte (ICE)", group = grpD)
+
+// ─────────────────────────────── Textos (tooltips) ───────────────────────────────
+TIP_PS    = "Preliminary Support: primer intento de frenar la caída, siempre fracasa. Aviso temprano de fin de tendencia bajista. Sirve para cerrar cortos, no para comprar."
+TIP_PSY   = "Preliminary Supply: primer intento de frenar la subida, siempre fracasa. Sirve para cerrar largos, no para vender."
+TIP_SC    = "Selling Climax: acción climática que detiene la caída y fija el soporte del rango. Se confirma con el AR y el ST."
+TIP_SE    = "Selling Exhaustion: fin de la caída por agotamiento, sin volumen climático. Se etiqueta como SC."
+TIP_BC    = "Buying Climax: acción climática que detiene la subida y fija la resistencia del rango."
+TIP_BE    = "Buying Exhaustion: fin de la subida por agotamiento, sin volumen climático. Se etiqueta como BC."
+TIP_ARU   = "Automatic Rally: primer rebote fuerte (cambio de carácter). Su máximo fija el techo del rango (Creek)."
+TIP_ARD   = "Automatic Reaction: primera caída fuerte (cambio de carácter). Su mínimo fija el suelo del rango (ICE)."
+TIP_ST    = "Secondary Test: test del clímax con menos volumen. Cierra la Fase A y abre la Fase B (construcción de la causa)."
+TIP_UA    = "Upthrust Action (Fase B): rotura temporal del máximo del AR y vuelta al rango."
+TIP_UT    = "Upthrust (Fase B): rotura temporal de la resistencia y vuelta al rango."
+TIP_STSOW = "ST as SOW (Fase B): rotura temporal del soporte y vuelta al rango. Test del mínimo del SC."
+TIP_MSOWm = "mSOW, Minor Sign of Weakness (Fase B): rotura temporal del soporte y vuelta al rango."
+TIP_SP1   = "Spring #1 / Terminal Shakeout (Fase C): penetración profunda con volumen alto. La oferta estuvo presente: necesita un test exitoso."
+TIP_SP2   = "Spring #2 (Fase C): penetración moderada con aumento de volumen. Hay oferta flotante: necesita test."
+TIP_SP3   = "Spring #3 (Fase C): penetración leve con volumen bajo. Oferta agotada: el Spring más potente, comprable sin test."
+TIP_TEST  = "Test del Spring: rango estrecho, menos volumen y sin perder el mínimo del Spring. Señal de compra."
+TIP_UTAD  = "UTAD, Upthrust After Distribution (Fase C): rotura de los máximos de las Fases A y B que fracasa."
+TIP_TUTAD = "Test del UTAD: subida con menos volumen que no supera el máximo del UTAD. Señal de venta."
+TIP_LPS   = "Last Point of Support: mínimo creciente; la oferta ya no aparece. Ubicación de compra."
+TIP_LPSY  = "Last Point of Supply: máximo decreciente; la demanda ya no aparece. Ubicación de venta."
+TIP_SOS   = "SOS / JAC (Fase D): Sign of Strength, salto del arroyo (Creek) con esfuerzo. Segundo cambio de carácter."
+TIP_MSOW  = "MSOW (Fase D): Major Sign of Weakness, rotura del soporte (ICE) con esfuerzo. Segundo cambio de carácter."
+TIP_BU    = "BU / BUEC: Back Up to the Edge of the Creek. Último retroceso antes de la tendencia alcista."
+TIP_BUD   = "Back Up al ICE: último retroceso antes de la tendencia bajista (LPSY)."
+TIP_FAIL  = "La estructura falló: el precio aceptó fuera del rango en contra del sesgo de la Fase C."
+
+// ─────────────────────────────── Cálculos base ───────────────────────────────
+atr      = ta.atr(atrLen)
+volMA    = ta.sma(volume, volLen)
+hasVol   = not na(volMA) and volMA > 0
+spreadMA = ta.sma(high - low, volLen)
+rs       = spreadMA > 0 ? (high - low) / spreadMA : 1.0
+// Sin volumen (índices, algunos CFD) el esfuerzo se aproxima con el rango relativo.
+rv       = hasVol ? volume / volMA : rs
+
+ph     = ta.pivothigh(high, pivLeft, pivRight)
+pl     = ta.pivotlow(low, pivLeft, pivRight)
+pivBar = bar_index - pivRight
+rvPiv  = rv[pivRight]
+// El volumen del pivote puede estar en la vela anterior o siguiente (p. ej. la vela de rango amplio antes del giro)
+rvAround = math.max(rv[pivRight - 1], rv[pivRight], rv[pivRight + 1])
+
+emaT    = ta.ema(close, trendLen)
+hh      = ta.highest(high, trendLen)
+ll      = ta.lowest(low, trendLen)
+downCtx = emaT < emaT[5] and close < emaT
+upCtx   = emaT > emaT[5] and close > emaT
+isClimaxVol = rv >= climaxMult
+scCond  = low <= ll and hh - low >= trendATR * atr and (isClimaxVol or allowExhaust)
+bcCond  = high >= hh and high - ll >= trendATR * atr and (isClimaxVol or allowExhaust)
+
+// Lectura esfuerzo/resultado de la vela (tabla de análisis del libro).
+highV = rv >= 1.3
+lowV  = rv <= 0.8
+wideR = rs >= 1.3
+narrR = rs <= 0.8
+erTxt = (highV and wideR) or (lowV and narrR) ? "Armonía" : (highV and narrR) or (lowV and wideR) ? "Divergencia" : "Neutral"
+
+// ─────────────────────────────── Estado ───────────────────────────────
+var int   st          = 0      // 0 buscando · 1 esperando AR · 2 esperando ST · 3 dentro del rango · 4 tras la ruptura
+var int   dir         = 0      // 1 rango tras una caída (SC) · -1 rango tras una subida (BC)
+var int   bias        = 0      // sesgo fijado en la Fase C: 1 alcista · -1 bajista
+var int   phase       = 0      // 1..5 = Fase A..E
+var int   climaxStart = na
+var int   climaxBar   = na
+var float climaxPrice = na
+var float climaxRv    = na
+var int   arBar       = na
+var float top         = na
+var float bot         = na
+var int   bStart      = na
+// excursión fuera del rango (sacudida o ruptura)
+var int   exDir = 0
+var int   exBar = na
+var float exExt = na
+var float exRv  = na
+var int   exOut = 0
+// Fase C / D
+var int   cBar     = na
+var float cPrice   = na
+var float cRv      = na
+var bool  needTest = false
+var bool  tested   = false
+var float chainExt = na
+var int   chainCnt = 0
+var int   lastPLBar   = na
+var float lastPLPrice = na
+var int   lastPHBar   = na
+var float lastPHPrice = na
+// tras la ruptura
+var int   brkBar  = na
+var float postExt = na
+var float buRef   = na
+var bool  buDone  = false
+var int   postBar = na
+var float brkRv   = na
+var bool  brkNoShake = false   // ruptura de esquema #2 (sin Spring/UTAD previo)
+var int   brkLIdx = 0          // dibujos creados al interpretar la ruptura (se borran si se reinterpreta)
+var int   brkNIdx = 0
+var int   cLIdx   = 0          // dibujos creados desde el evento de la Fase C (se rehacen si el sesgo se invierte)
+var int   cNIdx   = 0
+var float bUpExt  = na         // extremos de las sacudidas de Fase B ya etiquetadas
+var float bDnExt  = na
+// PS / PSY potenciales
+var int   psBar    = na
+var float psPrice  = na
+var int   psyBar   = na
+var float psyPrice = na
+// dibujos
+var box   rBox  = na
+var line  topLn = na
+var line  botLn = na
+var array<label> sLabels = array.new<label>()
+var array<line>  sLines  = array.new<line>()
+var string lastEvent    = "—"
+var int    lastEventBar = na
+var string lastType     = "—"
+
+// alertas de esta vela
+bool aSpring = false
+bool aUtad   = false
+bool aSos    = false
+bool aMsow   = false
+bool aTest   = false
+bool aPhaseE = false
+int  finish  = 0       // 1 estructura completada · 2 estructura fallida
+
+// ─────────────────────────────── Funciones ───────────────────────────────
+mkLabel(int x, float y, string txt, bool above, color c, string tip) =>
+    label.new(x, y, txt, xloc = xloc.bar_index, yloc = yloc.price, color = color.new(c, 10), textcolor = color.white, style = above ? label.style_label_down : label.style_label_up, size = size.small, tooltip = tip)
+
+typeName(int d, int b) =>
+    b == 0 ? "Rango en formación" : d == 1 ? (b == 1 ? "Acumulación" : "Redistribución") : (b == -1 ? "Distribución" : "Reacumulación")
+
+phaseName(int p) =>
+    p == 1 ? "A · Parada" : p == 2 ? "B · Causa" : p == 3 ? "C · Test" : p == 4 ? "D · Tendencia en rango" : p == 5 ? "E · Tendencia" : "—"
+
+// Borra los dibujos creados desde los índices dados (para rehacer una interpretación)
+trimTo(array<label> ls, array<line> ln, int li, int ni) =>
+    int nl = ls.size() - li
+    if nl > 0
+        for k = 1 to nl
+            label.delete(ls.pop())
+    int nn = ln.size() - ni
+    if nn > 0
+        for k = 1 to nn
+            line.delete(ln.pop())
+    nl + nn
+
+biasColor(int b) =>
+    b == 1 ? bullCol : b == -1 ? bearCol : neutCol
+
+// ─────────────────────────────── PS / PSY potenciales ───────────────────────────────
+if st == 0
+    if not na(pl) and rvAround >= psMult and downCtx[pivRight]
+        psBar   := pivBar
+        psPrice := pl
+    if not na(ph) and rvAround >= psMult and upCtx[pivRight]
+        psyBar   := pivBar
+        psyPrice := ph
+
+// ─────────────────────────────── Fase A: clímax → AR ───────────────────────────────
+if st == 1
+    climaxRv := math.max(climaxRv, rv)
+    if dir == 1
+        if low < climaxPrice
+            if bar_index - climaxStart <= 2 * pivLeft
+                climaxPrice := low
+                climaxBar   := bar_index
+            else
+                finish := 2
+        else if not na(ph) and pivBar > climaxBar and ph - climaxPrice >= minRangeATR * atr
+            arBar := pivBar
+            top   := ph
+            bot   := climaxPrice
+            st    := 2
+    else
+        if high > climaxPrice
+            if bar_index - climaxStart <= 2 * pivLeft
+                climaxPrice := high
+                climaxBar   := bar_index
+            else
+                finish := 2
+        else if not na(pl) and pivBar > climaxBar and climaxPrice - pl >= minRangeATR * atr
+            arBar := pivBar
+            top   := climaxPrice
+            bot   := pl
+            st    := 2
+    if st == 1 and finish == 0 and bar_index - climaxStart > maxWait
+        finish := 2
+
+// ─────────────────────────────── Fase A: AR → ST ───────────────────────────────
+else if st == 2
+    float h = top - bot
+    bool stOk = false
+    if dir == 1
+        if high > top
+            top   := high
+            arBar := bar_index
+        else if close < bot - bigBreakATR * atr
+            finish := 2
+        else if not na(pl) and pivBar > arBar and pl <= bot + 0.35 * h and pl >= bot - 0.5 * atr and rvPiv < climaxRv
+            stOk := true
+    else
+        if low < bot
+            bot   := low
+            arBar := bar_index
+        else if close > top + bigBreakATR * atr
+            finish := 2
+        else if not na(ph) and pivBar > arBar and ph >= top - 0.35 * h and ph <= top + 0.5 * atr and rvPiv < climaxRv
+            stOk := true
+    if finish == 0 and not stOk and bar_index - arBar > maxWait
+        finish := 2
+    if stOk
+        st     := 3
+        phase  := 2
+        bStart := pivBar
+        exDir  := 0
+        bUpExt := na
+        bDnExt := na
+        lastPLBar := na
+        lastPHBar := na
+        sLabels.clear()
+        sLines.clear()
+        bool climaxIsVol = climaxRv >= climaxMult
+        if showBox
+            rBox := box.new(climaxBar, top, bar_index, bot, border_color = color.new(neutCol, 50), border_width = 1, bgcolor = color.new(neutCol, 90), text = typeName(dir, 0), text_size = size.small, text_color = color.new(neutCol, 0), text_halign = text.align_left, text_valign = text.align_top)
+        topLn := line.new(dir == 1 ? arBar : climaxBar, top, bar_index, top, color = resCol, width = 2)
+        botLn := line.new(dir == 1 ? climaxBar : arBar, bot, bar_index, bot, color = supCol, width = 2)
+        if dir == 1
+            if not na(psBar) and psBar < climaxStart and climaxStart - psBar <= trendLen
+                sLabels.push(mkLabel(psBar, psPrice, "PS", false, neutCol, TIP_PS))
+            sLabels.push(mkLabel(climaxBar, bot, climaxIsVol ? "SC" : "SC (agot.)", false, bullCol, climaxIsVol ? TIP_SC : TIP_SE))
+            sLabels.push(mkLabel(arBar, top, "AR", true, neutCol, TIP_ARU))
+            sLabels.push(mkLabel(pivBar, pl, "ST", false, neutCol, TIP_ST))
+        else
+            if not na(psyBar) and psyBar < climaxStart and climaxStart - psyBar <= trendLen
+                sLabels.push(mkLabel(psyBar, psyPrice, "PSY", true, neutCol, TIP_PSY))
+            sLabels.push(mkLabel(climaxBar, top, climaxIsVol ? "BC" : "BC (agot.)", true, bearCol, climaxIsVol ? TIP_BC : TIP_BE))
+            sLabels.push(mkLabel(arBar, bot, "AR", false, neutCol, TIP_ARD))
+            sLabels.push(mkLabel(pivBar, ph, "ST", true, neutCol, TIP_ST))
+        if showPhases
+            float pad = 0.08 * (top - bot)
+            sLabels.push(label.new(climaxBar, top + pad, "Fase A", style = label.style_none, textcolor = neutCol, size = size.small))
+            sLines.push(line.new(bStart, top + pad, bStart, bot - pad, color = color.new(neutCol, 30), style = line.style_dotted))
+            sLabels.push(label.new(bStart, top + pad, "Fase B", style = label.style_none, textcolor = neutCol, size = size.small))
+        lastEvent    := "ST"
+        lastEventBar := pivBar
+
+// ─────────────────────────────── Fases B, C y D dentro del rango ───────────────────────────────
+else if st == 3
+    float mid = (top + bot) / 2
+    float pad = 0.08 * (top - bot)
+    // La Fase B (construcción de la causa) suele ser la más larga: antes de madurar, las sacudidas son UA/UT o ST as SOW/mSOW
+    bool mature = bar_index - bStart >= math.max(minBBars, math.round(bRel * (bStart - climaxBar)))
+    if not na(pl) and pl >= bot and pl <= top
+        lastPLBar   := pivBar
+        lastPLPrice := pl
+    if not na(ph) and ph >= bot and ph <= top
+        lastPHBar   := pivBar
+        lastPHPrice := ph
+
+    // Fase C → D: test, LPS/LPSY y cruce de la mitad del rango
+    if bias == 1
+        if not na(pl) and pivBar > cBar and pl > cPrice and pl >= bot - 0.5 * atr
+            if needTest and not tested and pl <= mid and rvPiv < cRv
+                tested   := true
+                chainExt := pl
+                aTest    := true
+                sLabels.push(mkLabel(pivBar, pl, "Test", false, bullCol, TIP_TEST))
+                lastEvent    := "Test del Spring"
+                lastEventBar := pivBar
+            else if (tested or not needTest) and chainCnt < 2 and pl > nz(chainExt, cPrice)
+                chainExt := pl
+                chainCnt += 1
+                sLabels.push(mkLabel(pivBar, pl, "LPS", false, bullCol, TIP_LPS))
+                lastEvent    := "LPS"
+                lastEventBar := pivBar
+        if phase == 3 and close > mid and bar_index > cBar
+            phase := 4
+            if showPhases
+                sLines.push(line.new(bar_index, top + pad, bar_index, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
+                sLabels.push(label.new(bar_index, top + pad, "Fase D", style = label.style_none, textcolor = bullCol, size = size.small))
+    else if bias == -1
+        if not na(ph) and pivBar > cBar and ph < cPrice and ph <= top + 0.5 * atr
+            if needTest and not tested and ph >= mid and rvPiv < cRv
+                tested   := true
+                chainExt := ph
+                aTest    := true
+                sLabels.push(mkLabel(pivBar, ph, "Test", true, bearCol, TIP_TUTAD))
+                lastEvent    := "Test del UTAD"
+                lastEventBar := pivBar
+            else if (tested or not needTest) and chainCnt < 2 and ph < nz(chainExt, cPrice)
+                chainExt := ph
+                chainCnt += 1
+                sLabels.push(mkLabel(pivBar, ph, "LPSY", true, bearCol, TIP_LPSY))
+                lastEvent    := "LPSY"
+                lastEventBar := pivBar
+        if phase == 3 and close < mid and bar_index > cBar
+            phase := 4
+            if showPhases
+                sLines.push(line.new(bar_index, top + pad, bar_index, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
+                sLabels.push(label.new(bar_index, top + pad, "Fase D", style = label.style_none, textcolor = bearCol, size = size.small))
+
+    // Excursiones fuera del rango: sacudida (vuelve) o ruptura (acepta fuera)
+    if exDir == 0
+        if high > top and (low >= bot or close >= mid)
+            exDir := 1
+            exBar := bar_index
+            exExt := high
+            exRv  := rv
+            exOut := 0
+        else if low < bot
+            exDir := -1
+            exBar := bar_index
+            exExt := low
+            exRv  := rv
+            exOut := 0
+    else
+        exRv := math.max(exRv, rv)
+        if exDir == 1 and high > exExt
+            exExt := high
+            exBar := bar_index
+        if exDir == -1 and low < exExt
+            exExt := low
+            exBar := bar_index
+
+    if exDir == 1
+        if close > top
+            exOut += 1
+        bool brk  = close > top and exOut >= confirmBars
+        bool back = close <= top
+        if back
+            // Sacudida alcista: UA / UT en Fase B, UTAD en Fase C
+            if bias == 0
+                if not mature
+                    if na(bUpExt) or exExt > bUpExt
+                        bUpExt := exExt
+                        sLabels.push(mkLabel(exBar, exExt, dir == 1 ? "UA" : "UT", true, neutCol, dir == 1 ? TIP_UA : TIP_UT))
+                        lastEvent := dir == 1 ? "UA" : "UT"
+                else
+                    bias     := -1
+                    phase    := 3
+                    cBar     := exBar
+                    cPrice   := exExt
+                    cRv      := exRv
+                    needTest := true
+                    tested   := false
+                    chainExt := na
+                    chainCnt := 0
+                    aUtad    := true
+                    cLIdx    := sLabels.size()
+                    cNIdx    := sLines.size()
+                    sLabels.push(mkLabel(exBar, exExt, "UTAD", true, bearCol, TIP_UTAD))
+                    if showPhases
+                        sLines.push(line.new(exBar, top + pad, exBar, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
+                        sLabels.push(label.new(exBar, top + pad, "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
+                    lastEvent := "UTAD"
+                lastEventBar := exBar
+            else if bias == -1
+                if exExt > cPrice
+                    cBar   := exBar
+                    cPrice := exExt
+                    cRv    := exRv
+                    tested := false
+                    aUtad  := true
+                    chainExt := na
+                    chainCnt := 0
+                    trimTo(sLabels, sLines, cLIdx, cNIdx)
+                    sLabels.push(mkLabel(exBar, exExt, "UTAD", true, bearCol, TIP_UTAD))
+                    if showPhases
+                        sLines.push(line.new(exBar, top + pad, exBar, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
+                        sLabels.push(label.new(exBar, top + pad, "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
+                    phase := 3
+                    lastEvent    := "UTAD"
+                    lastEventBar := exBar
+                else if not tested
+                    tested   := true
+                    chainExt := exExt
+                    aTest    := true
+                    sLabels.push(mkLabel(exBar, exExt, "Test", true, bearCol, TIP_TUTAD))
+                    lastEvent    := "Test del UTAD"
+                    lastEventBar := exBar
+            exDir := 0
+        else if brk
+            if bias == -1
+                // Aceptación por encima tras el "UTAD": no era distribución. Aquella sacudida fue un UA/UT de Fase B.
+                trimTo(sLabels, sLines, cLIdx, cNIdx)
+                sLabels.push(mkLabel(cBar, cPrice, dir == 1 ? "UA" : "UT", true, neutCol, dir == 1 ? TIP_UA : TIP_UT))
+                bias  := 0
+                phase := 2
+            if bias == 0 and not mature
+                finish := 2
+            else
+                brkNoShake := bias == 0
+                brkLIdx    := sLabels.size()
+                brkNIdx    := sLines.size()
+                if bias == 0
+                    // Esquema #2: sin sacudida, el test de la Fase C es un LPS
+                    bias := 1
+                    if not na(lastPLBar) and lastPLBar > bStart
+                        sLabels.push(mkLabel(lastPLBar, lastPLPrice, "LPS", false, bullCol, TIP_LPS))
+                        if showPhases
+                            sLines.push(line.new(lastPLBar, top + pad, lastPLBar, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
+                            sLabels.push(label.new(lastPLBar, top + pad, "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
+                if phase != 4 and showPhases
+                    sLines.push(line.new(bar_index, top + pad, bar_index, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
+                    sLabels.push(label.new(bar_index, top + pad, "Fase D", style = label.style_none, textcolor = bullCol, size = size.small))
+                phase   := 4
+                st      := 4
+                brkBar  := bar_index
+                postExt := exExt
+                postBar := exBar
+                brkRv   := exRv
+                buDone  := false
+                aSos    := true
+                sLabels.push(mkLabel(bar_index, high, "SOS/JAC", true, bullCol, TIP_SOS))
+                lastEvent    := "SOS / JAC"
+                lastEventBar := bar_index
+            exDir := 0
+
+    else if exDir == -1
+        if close < bot
+            exOut += 1
+        bool brk  = close < bot and exOut >= confirmBars
+        bool back = close >= bot
+        if back
+            // Sacudida bajista: ST as SOW / mSOW en Fase B, Spring en Fase C
+            if bias == 0
+                if not mature
+                    if na(bDnExt) or exExt < bDnExt
+                        bDnExt := exExt
+                        sLabels.push(mkLabel(exBar, exExt, dir == 1 ? "ST as SOW" : "mSOW", false, neutCol, dir == 1 ? TIP_STSOW : TIP_MSOWm))
+                        lastEvent := dir == 1 ? "ST as SOW" : "mSOW"
+                else
+                    float pen = (bot - exExt) / atr
+                    string spTxt = exRv >= tsoVol and pen >= tsoPen ? "Spring #1 (TSO)" : exRv < sp3Vol ? "Spring #3" : "Spring #2"
+                    bias     := 1
+                    phase    := 3
+                    cBar     := exBar
+                    cPrice   := exExt
+                    cRv      := exRv
+                    needTest := spTxt != "Spring #3"
+                    tested   := false
+                    chainExt := na
+                    chainCnt := 0
+                    aSpring  := true
+                    cLIdx    := sLabels.size()
+                    cNIdx    := sLines.size()
+                    sLabels.push(mkLabel(exBar, exExt, spTxt, false, bullCol, spTxt == "Spring #3" ? TIP_SP3 : spTxt == "Spring #2" ? TIP_SP2 : TIP_SP1))
+                    if showPhases
+                        sLines.push(line.new(exBar, top + pad, exBar, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
+                        sLabels.push(label.new(exBar, top + pad, "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
+                    lastEvent := spTxt
+                lastEventBar := exBar
+            else if bias == 1
+                if exExt < cPrice
+                    float pen = (bot - exExt) / atr
+                    string spTxt = exRv >= tsoVol and pen >= tsoPen ? "Spring #1 (TSO)" : exRv < sp3Vol ? "Spring #3" : "Spring #2"
+                    cBar     := exBar
+                    cPrice   := exExt
+                    cRv      := exRv
+                    needTest := spTxt != "Spring #3"
+                    tested   := false
+                    aSpring  := true
+                    chainExt := na
+                    chainCnt := 0
+                    trimTo(sLabels, sLines, cLIdx, cNIdx)
+                    sLabels.push(mkLabel(exBar, exExt, spTxt, false, bullCol, spTxt == "Spring #3" ? TIP_SP3 : spTxt == "Spring #2" ? TIP_SP2 : TIP_SP1))
+                    if showPhases
+                        sLines.push(line.new(exBar, top + pad, exBar, bot - pad, color = color.new(bullCol, 30), style = line.style_dotted))
+                        sLabels.push(label.new(exBar, top + pad, "Fase C", style = label.style_none, textcolor = bullCol, size = size.small))
+                    phase := 3
+                    lastEvent    := spTxt
+                    lastEventBar := exBar
+                else if not tested
+                    tested   := true
+                    chainExt := exExt
+                    aTest    := true
+                    sLabels.push(mkLabel(exBar, exExt, "Test", false, bullCol, TIP_TEST))
+                    lastEvent    := "Test del Spring"
+                    lastEventBar := exBar
+            exDir := 0
+        else if brk
+            if bias == 1
+                // Aceptación por debajo tras el "Spring": no era acumulación. Aquella sacudida fue un ST as SOW / mSOW.
+                trimTo(sLabels, sLines, cLIdx, cNIdx)
+                sLabels.push(mkLabel(cBar, cPrice, dir == 1 ? "ST as SOW" : "mSOW", false, neutCol, dir == 1 ? TIP_STSOW : TIP_MSOWm))
+                bias  := 0
+                phase := 2
+            if bias == 0 and not mature
+                finish := 2
+            else
+                brkNoShake := bias == 0
+                brkLIdx    := sLabels.size()
+                brkNIdx    := sLines.size()
+                if bias == 0
+                    // Esquema #2: sin UTAD, el test de la Fase C es un LPSY
+                    bias := -1
+                    if not na(lastPHBar) and lastPHBar > bStart
+                        sLabels.push(mkLabel(lastPHBar, lastPHPrice, "LPSY", true, bearCol, TIP_LPSY))
+                        if showPhases
+                            sLines.push(line.new(lastPHBar, top + pad, lastPHBar, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
+                            sLabels.push(label.new(lastPHBar, top + pad, "Fase C", style = label.style_none, textcolor = bearCol, size = size.small))
+                if phase != 4 and showPhases
+                    sLines.push(line.new(bar_index, top + pad, bar_index, bot - pad, color = color.new(bearCol, 30), style = line.style_dotted))
+                    sLabels.push(label.new(bar_index, top + pad, "Fase D", style = label.style_none, textcolor = bearCol, size = size.small))
+                phase   := 4
+                st      := 4
+                brkBar  := bar_index
+                postExt := exExt
+                postBar := exBar
+                brkRv   := exRv
+                buDone  := false
+                aMsow   := true
+                sLabels.push(mkLabel(bar_index, low, "MSOW", false, bearCol, TIP_MSOW))
+                lastEvent    := "MSOW"
+                lastEventBar := bar_index
+            exDir := 0
+
+    // Proyección causa/efecto al confirmar la ruptura
+    if st == 4 and showTarget
+        float h   = top - bot
+        float tgt = bias == 1 ? top + h : bot - h
+        int   len = math.min(math.max(bar_index - climaxBar, 10), 300)
+        color tc  = biasColor(bias)
+        sLines.push(line.new(bar_index, tgt, bar_index + len, tgt, color = tc, style = line.style_dashed, width = 1))
+        sLabels.push(label.new(bar_index + len, tgt, "Objetivo 1:1", style = bias == 1 ? label.style_label_lower_left : label.style_label_upper_left, color = color.new(tc, 70), textcolor = color.white, size = size.tiny, tooltip = "Ley de causa y efecto: altura del rango proyectada desde la ruptura. Causa = " + str.tostring(bar_index - climaxBar) + " velas."))
+
+// ─────────────────────────────── Fase D (tras la ruptura) → Fase E ───────────────────────────────
+else if st == 4
+    float h   = top - bot
+    float mid = (top + bot) / 2
+    float pad = 0.08 * h
+    bool backIn = bias == 1 ? close < top : close > bot
+    if bias == 1
+        if high > postExt
+            postExt := high
+            postBar := bar_index
+    else
+        if low < postExt
+            postExt := low
+            postBar := bar_index
+    brkRv := math.max(brkRv, rv)
+    if brkNoShake and backIn and bar_index - brkBar <= reinterBars
+        // Falsa rotura (divergencia esfuerzo/resultado en el nivel): era la sacudida de la Fase C
+        trimTo(sLabels, sLines, brkLIdx, brkNIdx)
+        bias     := -bias
+        st       := 3
+        phase    := 3
+        exDir    := 0
+        cBar     := postBar
+        cPrice   := postExt
+        cRv      := brkRv
+        tested   := false
+        chainExt := na
+        chainCnt := 0
+        cLIdx    := sLabels.size()
+        cNIdx    := sLines.size()
+        color cc = biasColor(bias)
+        if bias == -1
+            needTest := true
+            aUtad    := true
+            sLabels.push(mkLabel(postBar, postExt, "UTAD", true, bearCol, TIP_UTAD))
+            lastEvent := "UTAD"
+        else
+            float pen = (bot - postExt) / atr
+            string spTxt = brkRv >= tsoVol and pen >= tsoPen ? "Spring #1 (TSO)" : brkRv < sp3Vol ? "Spring #3" : "Spring #2"
+            needTest := spTxt != "Spring #3"
+            aSpring  := true
+            sLabels.push(mkLabel(postBar, postExt, spTxt, false, bullCol, spTxt == "Spring #3" ? TIP_SP3 : spTxt == "Spring #2" ? TIP_SP2 : TIP_SP1))
+            lastEvent := spTxt
+        lastEventBar := postBar
+        if showPhases
+            sLines.push(line.new(postBar, top + pad, postBar, bot - pad, color = color.new(cc, 30), style = line.style_dotted))
+            sLabels.push(label.new(postBar, top + pad, "Fase C", style = label.style_none, textcolor = cc, size = size.small))
+    else if bias == 1
+        if close < mid
+            finish := 2
+        else
+            if not buDone and not na(pl) and pivBar > brkBar
+                buDone := true
+                buRef  := postExt
+                bool nearCreek = pl <= top + atr
+                sLabels.push(mkLabel(pivBar, pl, nearCreek ? "BU/BUEC" : "LPS", false, bullCol, nearCreek ? TIP_BU : TIP_LPS))
+                lastEvent    := nearCreek ? "BU / BUEC" : "LPS"
+                lastEventBar := pivBar
+            else if (buDone and high > buRef and bar_index > pivBar) or (not buDone and close > top + h)
+                phase   := 5
+                finish  := 1
+                aPhaseE := true
+    else
+        if close > mid
+            finish := 2
+        else
+            if not buDone and not na(ph) and pivBar > brkBar
+                buDone := true
+                buRef  := postExt
+                bool nearIce = ph >= bot - atr
+                sLabels.push(mkLabel(pivBar, ph, "LPSY", true, bearCol, nearIce ? TIP_BUD : TIP_LPSY))
+                lastEvent    := "LPSY"
+                lastEventBar := pivBar
+            else if (buDone and low < buRef) or (not buDone and close < bot - h)
+                phase   := 5
+                finish  := 1
+                aPhaseE := true
+    if finish == 0 and st == 4 and bar_index - brkBar > 3 * maxWait
+        finish := 1
+    if aPhaseE and showPhases
+        sLabels.push(label.new(bar_index, bias == 1 ? high : low, "Fase E", style = bias == 1 ? label.style_label_down : label.style_label_up, color = color.new(biasColor(bias), 60), textcolor = color.white, size = size.small))
+        lastEvent    := "Fase E"
+        lastEventBar := bar_index
+
+// Mantener la caja y las líneas pegadas al precio mientras el rango está vivo
+if st == 3 and finish == 0
+    if not na(rBox)
+        rBox.set_right(bar_index)
+        rBox.set_bgcolor(color.new(biasColor(bias), 90))
+        rBox.set_border_color(color.new(biasColor(bias), 50))
+        rBox.set_text(typeName(dir, bias) + (bias != 0 ? "?" : ""))
+        rBox.set_text_color(biasColor(bias))
+    topLn.set_x2(bar_index)
+    botLn.set_x2(bar_index)
+if st == 4 and finish == 0 and bar_index == brkBar
+    lastType := typeName(dir, bias)
+    if not na(rBox)
+        rBox.set_right(bar_index)
+        rBox.set_bgcolor(color.new(biasColor(bias), 88))
+        rBox.set_border_color(color.new(biasColor(bias), 40))
+        rBox.set_text(typeName(dir, bias))
+        rBox.set_text_color(biasColor(bias))
+    topLn.set_x2(bar_index)
+    botLn.set_x2(bar_index)
+
+// ─────────────────────────────── Cierre de estructura ───────────────────────────────
+if finish != 0
+    if finish == 2
+        if bias != 0
+            // Falló después de la Fase C: se conserva con la marca de fallo
+            sLabels.push(mkLabel(bar_index, bias == 1 ? low : high, "Fallo", bias == -1, neutCol, TIP_FAIL))
+            if not na(rBox)
+                rBox.set_bgcolor(color.new(neutCol, 92))
+                rBox.set_border_color(color.new(neutCol, 60))
+                rBox.set_border_style(line.style_dashed)
+                rBox.set_text(typeName(dir, bias) + " (fallida)")
+                rBox.set_text_color(neutCol)
+            lastEvent    := "Fallo de " + typeName(dir, bias)
+            lastEventBar := bar_index
+        else if st >= 3 and not showBroken
+            if sLabels.size() > 0
+                for i = 0 to sLabels.size() - 1
+                    label.delete(sLabels.get(i))
+            if sLines.size() > 0
+                for i = 0 to sLines.size() - 1
+                    line.delete(sLines.get(i))
+            box.delete(rBox)
+            line.delete(topLn)
+            line.delete(botLn)
+        else if st >= 3
+            if not na(rBox)
+                rBox.set_border_style(line.style_dashed)
+                rBox.set_text("Rango sin causa")
+    if finish == 1
+        lastType := typeName(dir, bias)
+    sLabels.clear()
+    sLines.clear()
+    st     := 0
+    dir    := 0
+    bias   := 0
+    phase  := 0
+    exDir  := 0
+    rBox   := na
+    topLn  := na
+    botLn  := na
+
+// ─────────────────────────────── Fase A: búsqueda del clímax ───────────────────────────────
+if st == 0 and finish == 0
+    if scCond
+        st          := 1
+        dir         := 1
+        phase       := 1
+        climaxStart := bar_index
+        climaxBar   := bar_index
+        climaxPrice := low
+        climaxRv    := rv
+    else if bcCond
+        st          := 1
+        dir         := -1
+        phase       := 1
+        climaxStart := bar_index
+        climaxBar   := bar_index
+        climaxPrice := high
+        climaxRv    := rv
+
+// ─────────────────────────────── Salidas ───────────────────────────────
+barcolor(colorClimax and isClimaxVol ? (close >= open ? color.new(#FFC107, 0) : color.new(#FF6D00, 0)) : na, title = "Vela climática")
+
+var table tbl = table.new(position.top_right, 2, 7, bgcolor = color.new(#131722, 10), border_color = color.new(#787B86, 60), border_width = 1)
+if showTable and barstate.islast
+    bool active = st >= 2
+    string estr = active ? typeName(dir, bias) : st == 1 ? "Clímax potencial" : "Buscando clímax"
+    string fase = active or st == 1 ? phaseName(phase) : "—"
+    color  ec   = active ? biasColor(bias) : neutCol
+    tbl.cell(0, 0, "Wyckoff", text_color = color.white, text_size = size.small, text_halign = text.align_left)
+    tbl.cell(1, 0, "Villahermosa", text_color = color.new(#787B86, 0), text_size = size.small, text_halign = text.align_right)
+    tbl.cell(0, 1, "Estructura", text_color = color.new(#B2B5BE, 0), text_size = size.small, text_halign = text.align_left)
+    tbl.cell(1, 1, estr, text_color = ec, text_size = size.small, text_halign = text.align_right)
+    tbl.cell(0, 2, "Fase", text_color = color.new(#B2B5BE, 0), text_size = size.small, text_halign = text.align_left)
+    tbl.cell(1, 2, fase, text_color = color.white, text_size = size.small, text_halign = text.align_right)
+    tbl.cell(0, 3, "Último evento", text_color = color.new(#B2B5BE, 0), text_size = size.small, text_halign = text.align_left)
+    tbl.cell(1, 3, lastEvent + (na(lastEventBar) ? "" : " (hace " + str.tostring(bar_index - lastEventBar) + ")"), text_color = color.white, text_size = size.small, text_halign = text.align_right)
+    tbl.cell(0, 4, "Causa (velas)", text_color = color.new(#B2B5BE, 0), text_size = size.small, text_halign = text.align_left)
+    tbl.cell(1, 4, active ? str.tostring(bar_index - climaxBar) : "—", text_color = color.white, text_size = size.small, text_halign = text.align_right)
+    tbl.cell(0, 5, "Esfuerzo/Resultado", text_color = color.new(#B2B5BE, 0), text_size = size.small, text_halign = text.align_left)
+    tbl.cell(1, 5, erTxt + " · vol " + str.tostring(rv, "#.##") + "×", text_color = erTxt == "Armonía" ? bullCol : erTxt == "Divergencia" ? bearCol : color.white, text_size = size.small, text_halign = text.align_right)
+    tbl.cell(0, 6, "Última estructura", text_color = color.new(#B2B5BE, 0), text_size = size.small, text_halign = text.align_left)
+    tbl.cell(1, 6, lastType, text_color = color.white, text_size = size.small, text_halign = text.align_right)
+
+alertcondition(aSpring, "Spring", "Wyckoff: Spring en Fase C")
+alertcondition(aUtad, "UTAD", "Wyckoff: UTAD en Fase C")
+alertcondition(aTest, "Test de Fase C", "Wyckoff: test del Spring/UTAD")
+alertcondition(aSos, "SOS / JAC", "Wyckoff: SOS / salto del Creek (Fase D alcista)")
+alertcondition(aMsow, "MSOW", "Wyckoff: MSOW, rotura del ICE (Fase D bajista)")
+alertcondition(aPhaseE, "Fase E", "Wyckoff: comienza la Fase E (tendencia fuera del rango)")
