@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Market Profile (TPO) · Bull Army</title>
+<style>
+@font-face { font-family: 'Inter'; font-weight: 400; src: url('../../public/fonts/Inter-Regular.otf'); }
+@font-face { font-family: 'Inter'; font-weight: 500; src: url('../../public/fonts/Inter-Medium.otf'); }
+@font-face { font-family: 'Inter'; font-weight: 600; src: url('../../public/fonts/Inter-SemiBold.otf'); }
+@font-face { font-family: 'Inter Display'; font-weight: 700; src: url('../../public/fonts/InterDisplay-Bold.otf'); }
+@font-face { font-family: 'Inter Display'; font-weight: 800; src: url('../../public/fonts/InterDisplay-ExtraBold.otf'); }
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+:root { --bg:#0A0A0B; --panel:#141417; --panel2:#1B1B1F; --line:#2A2A2F; --gold:#E3A82B; --white:#F4F4F5; --text:#D4D4D8; --muted:#8E8E96; --green:#26C281; --red:#F0465A; --purple:#A970FF; --pink:#FF5FA2; --orange:#FF9A3C; --blue:#5B8DEF; }
+html, body { margin: 0; padding: 0; background: var(--bg); }
+body { font-family: 'Inter', sans-serif; color: var(--text); font-size: 10.5pt; line-height: 1.55; }
+.page { width: 210mm; height: 297mm; padding: 20mm 18mm 18mm; position: relative; overflow: hidden; page-break-after: always; background: var(--bg); }
+.page:last-child { page-break-after: auto; }
+.footer { position: absolute; left: 18mm; right: 18mm; bottom: 10mm; display: flex; justify-content: space-between; font-size: 8pt; color: var(--muted); letter-spacing: .04em; }
+.kicker { font-weight: 600; font-size: 8.5pt; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
+h1, h2, h3 { font-family: 'Inter Display', sans-serif; color: var(--white); margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 22pt; font-weight: 700; margin: 4px 0 4px; }
+h2 + .rule { width: 46px; height: 3px; background: var(--gold); border-radius: 2px; margin: 10px 0 16px; }
+h3 { font-size: 12.5pt; font-weight: 700; margin: 16px 0 6px; }
+p { margin: 0 0 9px; }
+strong { color: var(--white); font-weight: 600; }
+.lead { font-size: 11.5pt; color: var(--text); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+.card.hl { border-color: var(--gold); background: linear-gradient(90deg, rgba(227,168,43,.12), rgba(255,255,255,.02)); }
+.card.bad { border-color: rgba(240,70,90,.6); background: linear-gradient(90deg, rgba(240,70,90,.10), rgba(255,255,255,.02)); }
+.card.good { border-color: rgba(38,194,129,.6); background: linear-gradient(90deg, rgba(38,194,129,.10), rgba(255,255,255,.02)); }
+.card p:last-child { margin-bottom: 0; }
+.note { border-left: 3px solid var(--gold); padding: 8px 12px; background: rgba(227,168,43,.07); border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 9.5pt; }
+table { width: 100%; border-collapse: collapse; font-size: 9.3pt; margin: 8px 0 12px; }
+th { text-align: left; font-weight: 600; font-size: 7.8pt; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); padding: 7px 8px; border-bottom: 1px solid var(--gold); }
+td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.k { color: var(--white); font-weight: 600; white-space: nowrap; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 7px; }
+ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 8px 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: 2px 0 9px 40px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 13px; background: rgba(227,168,43,.16); color: var(--gold); font-family: 'Inter Display'; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 11pt; }
+ul { margin: 4px 0 10px; padding-left: 18px; }
+ul li { margin-bottom: 4px; }
+ul li::marker { color: var(--gold); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+.grid2 .card, .grid4 .card { margin: 0; }
+.tag { font-size: 7.8pt; letter-spacing: .2em; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.name { font-family: 'Inter Display'; font-weight: 800; font-size: 13pt; color: var(--white); margin: 2px 0 6px; }
+.small { font-size: 9pt; }
+.fig svg { width: 100%; height: auto; display: block; border-radius: 10px; }
+.cap { font-size: 8.5pt; color: var(--muted); margin: 6px 0 10px; }
+.check { list-style: none; padding: 0; margin: 4px 0; }
+.check li { position: relative; padding: 5px 0 5px 28px; border-bottom: 1px solid var(--line); }
+.check li::before { content: ''; position: absolute; left: 0; top: 7px; width: 14px; height: 14px; border: 1.5px solid var(--gold); border-radius: 3px; }
+.num { font-family: 'Inter Display'; font-weight: 800; color: var(--gold); font-size: 18pt; line-height: 1; }
+/* cover */
+.cover { padding: 26mm 20mm; display: flex; flex-direction: column; justify-content: space-between; background:
+  radial-gradient(circle at 85% 8%, rgba(227,168,43,.16), transparent 45%), var(--bg); }
+.cover h1 { font-size: 46pt; font-weight: 800; line-height: 1.02; letter-spacing: -.02em; }
+.cover .line { width: 70px; height: 4px; background: var(--white); margin-bottom: 22px; }
+.cover .sub { font-size: 13pt; color: var(--text); max-width: 140mm; margin-top: 18px; line-height: 1.5; }
+.cover .art { position: absolute; right: 14mm; top: 34mm; width: 92mm; opacity: .7; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="page cover">
+  <div class="kicker" style="font-size:11pt">Bull Army</div>
+  <svg class="art" viewBox="0 0 300 300">
+    <g fill="#E3A82B">
+      <rect x="40" y="20" width="18" height="14" rx="2" fill-opacity=".35"/>
+      <rect x="40" y="38" width="18" height="14" rx="2" fill-opacity=".4"/><rect x="62" y="38" width="18" height="14" rx="2" fill-opacity=".35"/>
+      <rect x="40" y="56" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="62" y="56" width="18" height="14" rx="2" fill-opacity=".45"/><rect x="84" y="56" width="18" height="14" rx="2" fill-opacity=".4"/>
+      <rect x="40" y="74" width="18" height="14" rx="2" fill-opacity=".6"/><rect x="62" y="74" width="18" height="14" rx="2" fill-opacity=".55"/><rect x="84" y="74" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="106" y="74" width="18" height="14" rx="2" fill-opacity=".45"/><rect x="128" y="74" width="18" height="14" rx="2" fill-opacity=".4"/>
+      <rect x="40" y="92" width="18" height="14" rx="2" fill-opacity=".7"/><rect x="62" y="92" width="18" height="14" rx="2" fill-opacity=".65"/><rect x="84" y="92" width="18" height="14" rx="2" fill-opacity=".6"/><rect x="106" y="92" width="18" height="14" rx="2" fill-opacity=".55"/><rect x="128" y="92" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="150" y="92" width="18" height="14" rx="2" fill-opacity=".45"/><rect x="172" y="92" width="18" height="14" rx="2" fill-opacity=".4"/>
+      <rect x="40" y="110" width="18" height="14" rx="2" fill-opacity=".8"/><rect x="62" y="110" width="18" height="14" rx="2" fill-opacity=".75"/><rect x="84" y="110" width="18" height="14" rx="2" fill-opacity=".7"/><rect x="106" y="110" width="18" height="14" rx="2" fill-opacity=".65"/><rect x="128" y="110" width="18" height="14" rx="2" fill-opacity=".6"/><rect x="150" y="110" width="18" height="14" rx="2" fill-opacity=".55"/><rect x="172" y="110" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="194" y="110" width="18" height="14" rx="2" fill-opacity=".45"/><rect x="216" y="110" width="18" height="14" rx="2" fill-opacity=".4"/>
+      <rect x="40" y="128" width="18" height="14" rx="2" fill-opacity=".85"/><rect x="62" y="128" width="18" height="14" rx="2" fill-opacity=".8"/><rect x="84" y="128" width="18" height="14" rx="2" fill-opacity=".75"/><rect x="106" y="128" width="18" height="14" rx="2" fill-opacity=".7"/><rect x="128" y="128" width="18" height="14" rx="2" fill-opacity=".65"/><rect x="150" y="128" width="18" height="14" rx="2" fill-opacity=".6"/><rect x="172" y="128" width="18" height="14" rx="2" fill-opacity=".55"/><rect x="194" y="128" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="216" y="128" width="18" height="14" rx="2" fill-opacity=".45"/><rect x="238" y="128" width="18" height="14" rx="2" fill-opacity=".4"/>
+      <rect x="40" y="146" width="18" height="14" rx="2" fill-opacity=".8"/><rect x="62" y="146" width="18" height="14" rx="2" fill-opacity=".75"/><rect x="84" y="146" width="18" height="14" rx="2" fill-opacity=".7"/><rect x="106" y="146" width="18" height="14" rx="2" fill-opacity=".65"/><rect x="128" y="146" width="18" height="14" rx="2" fill-opacity=".6"/><rect x="150" y="146" width="18" height="14" rx="2" fill-opacity=".55"/><rect x="172" y="146" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="194" y="146" width="18" height="14" rx="2" fill-opacity=".45"/>
+      <rect x="40" y="164" width="18" height="14" rx="2" fill-opacity=".7"/><rect x="62" y="164" width="18" height="14" rx="2" fill-opacity=".65"/><rect x="84" y="164" width="18" height="14" rx="2" fill-opacity=".6"/><rect x="106" y="164" width="18" height="14" rx="2" fill-opacity=".55"/><rect x="128" y="164" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="150" y="164" width="18" height="14" rx="2" fill-opacity=".45"/>
+      <rect x="40" y="182" width="18" height="14" rx="2" fill-opacity=".6"/><rect x="62" y="182" width="18" height="14" rx="2" fill-opacity=".55"/><rect x="84" y="182" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="106" y="182" width="18" height="14" rx="2" fill-opacity=".45"/>
+      <rect x="40" y="200" width="18" height="14" rx="2" fill-opacity=".5"/><rect x="62" y="200" width="18" height="14" rx="2" fill-opacity=".45"/>
+      <rect x="40" y="218" width="18" height="14" rx="2" fill-opacity=".4"/>
+      <rect x="40" y="236" width="18" height="14" rx="2" fill-opacity=".35"/>
+    </g>
+    <line x1="30" x2="280" y1="135" y2="135" stroke="#FF9A3C" stroke-width="3"/>
+    <line x1="30" x2="280" y1="71" y2="71" stroke="#26C281" stroke-width="2.5"/>
+    <line x1="30" x2="280" y1="197" y2="197" stroke="#26C281" stroke-width="2.5"/>
+  </svg>
+  <div style="position:relative">
+    <div class="line"></div>
+    <h1>Market<br>Profile<br><span style="color:var(--gold)">(TPO)</span></h1>
+    <div class="sub">Cómo leer la subasta del día para encontrar el valor justo, marcar niveles, formar tu sesgo y, sobre todo, reconocer en qué tipo de entorno estás operando.</div>
+  </div>
+  <div style="font-size:9pt;color:var(--muted)">Material educativo · Bull Army · Basado en un vídeo de Maggus sobre Market Profile</div>
+</section>
+
+<!-- ============ WHAT IS ============ -->
+<section class="page">
+  <div class="kicker">01 · Qué es</div>
+  <h2>Qué es el Market Profile</h2><div class="rule"></div>
+  <p class="lead">El Market Profile, también llamado <strong>TPO</strong> (<em>Time Price Opportunity</em>, tiempo-precio-oportunidad), muestra <strong>en qué precios pasó más tiempo el mercado</strong> durante cada día. Cada día forma una figura parecida a una <strong>campana</strong> puesta de lado.</p>
+
+  <h3>El objetivo: encontrar el valor justo</h3>
+  <p>Lo que vemos en el perfil es el <strong>proceso de subasta</strong>: compradores y vendedores yendo y viniendo hasta ponerse de acuerdo sobre cuánto vale el activo. Como trader, tu meta es saber cuál es ese <strong>valor justo</strong>, porque te ayuda a tomar decisiones informadas.</p>
+
+  <div class="grid2">
+    <div class="card good">
+      <div class="tag">Precio por debajo del valor</div>
+      <div class="name">Oportunidad de largo</div>
+      <p class="small">El mercado está «barato» respecto a donde aceptó negociar. Buscá compras.</p>
+    </div>
+    <div class="card bad">
+      <div class="tag">Precio por encima del valor</div>
+      <div class="name">Oportunidad de corto</div>
+      <p class="small">El mercado está «caro» respecto a donde aceptó negociar. Buscá ventas.</p>
+    </div>
+  </div>
+
+  <h3>Qué te da esta herramienta</h3>
+  <div class="grid4" style="margin-top:8px">
+    <div class="card"><div class="num">1</div><div class="name" style="margin-top:8px">Niveles</div><p class="small">Precios concretos desde donde operar: VAH, VAL, POC, anomalías.</p></div>
+    <div class="card"><div class="num">2</div><div class="name" style="margin-top:8px">Sesgo</div><p class="small">Hacia dónde es más probable que se mueva el precio.</p></div>
+    <div class="card"><div class="num">3</div><div class="name" style="margin-top:8px">Contexto</div><p class="small">Algo de contexto. El resto llega más desde el orderflow que del perfil.</p></div>
+    <div class="card hl"><div class="num">4</div><div class="name" style="margin-top:8px">Entorno</div><p class="small"><strong>Lo más importante:</strong> saber si el mercado está en rango o en tendencia.</p></div>
+  </div>
+
+  <div class="note" style="margin-top:16px">Esta guía no profundiza en la <strong>teoría de subasta</strong> (<em>Auction Market Theory</em>), que es la base de todo esto. Si no la conocés, vale la pena estudiarla aparte.</div>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>02</span></div>
+</section>
+
+<!-- ============ BUILD ============ -->
+<section class="page">
+  <div class="kicker">02 · Cómo se construye</div>
+  <h2>De bloques de tiempo a un perfil</h2><div class="rule"></div>
+  <p class="lead">La configuración estándar divide el día en <strong>bloques de 30 minutos</strong>. Cada bloque marca todos los precios que el mercado tocó durante esa media hora.</p>
+
+  <div class="fig">{{SVG_BUILD}}</div>
+  <p class="cap">Ejemplo simplificado con 10 bloques. Cada letra es una media hora; al «empujarlas» hacia la izquierda se forma el perfil.</p>
+
+  <h3>Letras o colores</h3>
+  <div class="grid2">
+    <div class="card">
+      <div class="tag">Forma estándar</div>
+      <div class="name">Letras A → Z</div>
+      <p class="small">Cada bloque lleva una letra en orden alfabético. <strong>Recomendado para empezar</strong>: hace más fácil entender cómo se fue formando el día.</p>
+    </div>
+    <div class="card">
+      <div class="tag">Alternativa</div>
+      <div class="name">Sombreado</div>
+      <p class="small">Cuanto más <strong>oscuro</strong> el bloque, más <strong>temprano</strong> en el día; cuanto más <strong>claro</strong>, más <strong>tarde</strong>. Es preferencia personal.</p>
+    </div>
+  </div>
+  <p style="margin-top:12px">Con el tiempo vas a ver que, salvo que operes muy intradía con esta herramienta, <strong>no necesitás saber en qué orden exacto</strong> se imprimió cada bloque. Lo que importa es la forma de la distribución.</p>
+
+  <div class="card hl">
+    <div class="tag" style="color:var(--gold)">La idea clave</div>
+    <p style="margin:4px 0 0">Donde hay <strong>muchas letras</strong>, el mercado pasó mucho tiempo: hubo acuerdo, es <strong>valor</strong>. Donde hay <strong>pocas</strong>, el precio pasó rápido: hubo desacuerdo o rechazo.</p>
+  </div>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>03</span></div>
+</section>
+
+<!-- ============ ANATOMY ============ -->
+<section class="page">
+  <div class="kicker">03 · Anatomía</div>
+  <h2>Las partes del perfil</h2><div class="rule"></div>
+  <p class="lead">Todo lo demás se construye sobre estos componentes. Los colores son los del ejemplo; cuando armes tus perfiles podés usar los que quieras.</p>
+
+  <div class="fig">{{SVG_ANATOMY}}</div>
+  <p class="cap">Perfil de ejemplo. POC, VAH y VAL están calculados sobre estas letras con la regla del 70%.</p>
+
+  <table>
+    <tr><th>Componente</th><th>Qué es</th></tr>
+    <tr><td class="k"><span class="sw" style="background:var(--green)"></span>Área de valor (VA)</td><td>La zona donde se pasó el <strong>70% del tiempo</strong> del día. Algunos usan 68%, pero 70% es lo más habitual.</td></tr>
+    <tr><td class="k"><span class="sw" style="background:var(--green)"></span>VAH</td><td><em>Value Area High</em>: el borde superior del área de valor.</td></tr>
+    <tr><td class="k"><span class="sw" style="background:var(--green)"></span>VAL</td><td><em>Value Area Low</em>: el borde inferior del área de valor.</td></tr>
+    <tr><td class="k"><span class="sw" style="background:var(--orange)"></span>POC</td><td><em>Point of Control</em>: el precio donde el mercado pasó <strong>más tiempo</strong> en el día.</td></tr>
+    <tr><td class="k"><span class="sw" style="background:var(--purple)"></span>IB</td><td><em>Initial Balance</em>: el rango de la <strong>primera hora</strong> de negociación (los dos primeros bloques, A y B).</td></tr>
+  </table>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>04</span></div>
+</section>
+
+<!-- ============ IB ============ -->
+<section class="page">
+  <div class="kicker">03 · Anatomía</div>
+  <h2>Initial Balance: el sesgo del día</h2><div class="rule"></div>
+  <p class="lead">El rango que se forma en la <strong>primera hora</strong> es muy útil para el sesgo. Cuando el precio negocia por encima o por debajo de ese rango, suele decir mucho de cómo va a terminar el día.</p>
+
+  <div class="fig">{{SVG_IB}}</div>
+  <p class="cap">Ilustración simplificada. A la izquierda el precio sale del IB y construye arriba; a la derecha rota alrededor del IB.</p>
+
+  <table>
+    <tr><th>Qué pasa con el IB</th><th>Lectura</th></tr>
+    <tr><td class="k">Se rompe al alza y se acepta</td><td>El mercado busca valor más arriba: <strong>sesgo alcista</strong> para el resto del día.</td></tr>
+    <tr><td class="k">Se rompe a la baja y se acepta</td><td>El mercado busca valor más abajo: <strong>sesgo bajista</strong>.</td></tr>
+    <tr><td class="k">El precio se queda dentro</td><td>Rotación alrededor del rango inicial: día de <strong>balance</strong>.</td></tr>
+  </table>
+
+  <h3>Resumen de la anatomía</h3>
+  <ul class="check">
+    <li>El perfil muestra <strong>tiempo</strong> en cada precio, no volumen.</li>
+    <li>El <strong>área de valor</strong> concentra el 70% del tiempo; sus bordes son VAH y VAL.</li>
+    <li>El <strong>POC</strong> es el precio más «aceptado» del día.</li>
+    <li>El <strong>IB</strong> es la primera hora; salir de él y mantenerse fuera da sesgo.</li>
+  </ul>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>05</span></div>
+</section>
+
+<!-- ============ SINGLES ============ -->
+<section class="page">
+  <div class="kicker">04 · Anomalías</div>
+  <h2>Single prints y vacíos</h2><div class="rule"></div>
+  <p class="lead">Las <strong>anomalías</strong> son partes del perfil donde el mercado no se comportó de forma sana. Son niveles muy útiles para marcar.</p>
+
+  <div class="fig">{{SVG_SINGLES}}</div>
+  <p class="cap">Un día que empezó en balance y una noticia explosiva convirtió en tendencia (en el vídeo, el día de un tuit de Elon Musk).</p>
+
+  <h3>Qué son</h3>
+  <p>Son tramos <strong>dentro</strong> del perfil donde solo aparece <strong>una letra por precio</strong>. También se les llama <strong>vacíos</strong> (<em>voids</em>). Muestran una <strong>ausencia de comercio a dos lados</strong>: las órdenes agresivas se comieron toda la liquidez pasiva del libro y el precio salió disparado miles de dólares en muy poco tiempo.</p>
+
+  <div class="grid2">
+    <div class="card good">
+      <div class="tag">Mercado sano</div>
+      <p class="small" style="margin-top:4px">Hay comercio a dos lados: el precio <strong>va y vuelve</strong> varias veces por cada nivel.</p>
+    </div>
+    <div class="card bad">
+      <div class="tag">Anomalía</div>
+      <p class="small" style="margin-top:4px">El precio pasó por esos niveles <strong>una sola vez</strong>. Queda una ineficiencia que el mercado puede querer «rellenar» más adelante.</p>
+    </div>
+  </div>
+  <div class="note">Una single print tiene que estar <strong>entre otros bloques</strong>. Si las letras sueltas están en el extremo del perfil, ya no es una single: es una <strong>cola</strong> (siguiente página).</div>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>06</span></div>
+</section>
+
+<!-- ============ TAILS & POOR ============ -->
+<section class="page">
+  <div class="kicker">04 · Anomalías</div>
+  <h2>Colas, máximos y mínimos pobres</h2><div class="rule"></div>
+
+  <div class="fig">{{SVG_TAILS}}</div>
+
+  <h3>Colas (tails)</h3>
+  <p>Son como las single prints pero en los <strong>extremos</strong> del perfil, en el máximo o en el mínimo del día. Son <strong>muy comunes</strong>: cuesta poco encontrar varias en cualquier gráfico. Al precio le gusta <strong>volver a atravesarlas</strong> para «aliviarlas».</p>
+
+  <h3>Máximos y mínimos pobres (poor high / poor low)</h3>
+  <p>Un extremo del día que queda <strong>romo</strong>, plano, en lugar de terminar en punta. Lo ideal es ver <strong>3 o 4 bloques</strong> al mismo precio en el máximo o en el mínimo; con 2 es dudoso. Indican que la subasta no terminó bien en ese extremo, y <strong>se suelen limpiar muy seguido</strong>, por eso no hay tantos a la vista.</p>
+
+  <table>
+    <tr><th>Anomalía</th><th>Dónde está</th><th>Qué suele pasar</th></tr>
+    <tr><td class="k">Single print / vacío</td><td>Dentro del perfil</td><td>Puede rellenarse si el mercado vuelve a buscar balance.</td></tr>
+    <tr><td class="k">Cola</td><td>En el máximo o mínimo</td><td>El precio suele volver a atravesarla.</td></tr>
+    <tr><td class="k">Máximo / mínimo pobre</td><td>Extremo plano (3+ bloques)</td><td>Se suele limpiar pronto.</td></tr>
+  </table>
+  <div class="note">En el vídeo, el autor usa sobre todo <strong>singles, vacíos y colas</strong>, y menos los máximos y mínimos pobres. Es preferencia personal: aprendé las ideas y quedate con lo que te funcione.</div>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>07</span></div>
+</section>
+
+<!-- ============ VOLUME ============ -->
+<section class="page">
+  <div class="kicker">05 · Perfil de volumen</div>
+  <h2>Nodos de volumen alto y bajo</h2><div class="rule"></div>
+  <p class="lead">El último componente viene del <strong>perfil de volumen</strong>, que mide el volumen negociado en cada precio (no el tiempo). Mirando un rango más amplio aparecen dos tipos de zonas.</p>
+
+  <div class="fig">{{SVG_VOLUME}}</div>
+
+  <div class="grid2" style="margin-top:12px">
+    <div class="card hl">
+      <div class="tag" style="color:var(--gold)">HVN · High Volume Node</div>
+      <div class="name">Mucho volumen</div>
+      <p class="small">Zona donde se negoció muchísimo. En teoría es <strong>difícil de atravesar</strong>. Pero si el precio logra cruzarla, es <strong>muy probable que continúe</strong> en esa dirección.</p>
+    </div>
+    <div class="card" style="border-color:rgba(91,141,239,.6)">
+      <div class="tag" style="color:var(--blue)">LVN · Low Volume Node</div>
+      <div class="name">Ausencia de volumen</div>
+      <p class="small">Zona por la que el precio pasó rápido. Cuando el precio llega ahí suele hacer una de dos cosas (abajo).</p>
+    </div>
+  </div>
+
+  <h3>Cómo se operan los LVN</h3>
+  <ol class="steps">
+    <li><strong>Rebote rápido</strong> (lo más habitual): el precio llega al LVN y reacciona enseguida. Es la forma en que más vas a querer operarlos.</li>
+    <li><strong>Relleno</strong>: si al llegar <strong>no hay reacción rápida</strong>, el precio normalmente <strong>rellena el vacío</strong>, porque es una ineficiencia.</li>
+  </ol>
+
+  <div class="card">
+    <div class="tag">Ejemplo de razonamiento del vídeo</div>
+    <p class="small" style="margin-top:4px">El precio está sobre un HVN y lo intentó perforar sin éxito. Mientras no <strong>acepte por debajo</strong> de esa zona, no hay motivo para ser bajista: ahí nace un sesgo alcista. Si la perfora y se acepta abajo, lo probable es que vaya rápido hasta el siguiente LVN.</p>
+  </div>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>08</span></div>
+</section>
+
+<!-- ============ INEFFICIENCIES & ENV ============ -->
+<section class="page">
+  <div class="kicker">06 · Ineficiencias</div>
+  <h2>¿Se van a rellenar? Depende del entorno</h2><div class="rule"></div>
+  <p class="lead">Singles, colas, vacíos y LVN son <strong>ineficiencias</strong>. En un mercado sano el precio tiende a rellenarlas… pero no siempre.</p>
+
+  <div class="grid2">
+    <div class="card bad">
+      <div class="tag">Entorno de tendencia</div>
+      <div class="name">Se quedan atrás</div>
+      <p class="small">Con una tendencia fuerte, mucha demanda sobre una oferta limitada, al mercado no le importa: <strong>a menudo deja las ineficiencias sin rellenar</strong>.</p>
+    </div>
+    <div class="card good">
+      <div class="tag">Entorno de rango</div>
+      <div class="name">Se limpian</div>
+      <p class="small">En rango es <strong>mucho más probable</strong> que el precio barra y rellene todas las ineficiencias.</p>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:14px"><strong>Precaución, sobre todo si estás empezando:</strong> marcá todas las anomalías, pero no tengas certeza de que se vayan a rellenar. <strong>Cuanto más lejos del precio</strong> estén, menos probable es que se rellenen.</div>
+
+  <h3>Cómo usarlas en la práctica</h3>
+  <ol class="steps">
+    <li><strong>Marcá</strong> singles, colas, máximos/mínimos pobres y LVN en tu gráfico.</li>
+    <li><strong>Identificá el entorno</strong> (siguiente página): ¿rango o tendencia?</li>
+    <li>En <strong>rango</strong>, usalas como objetivos probables.</li>
+    <li>En <strong>tendencia</strong>, tratalas como referencias, no como imanes. Priorizá las más cercanas al precio.</li>
+  </ol>
+
+  <div class="card hl">
+    <div class="tag" style="color:var(--gold)">Regla práctica</div>
+    <p style="margin:4px 0 0">Una ineficiencia <strong>cercana</strong> en un mercado en <strong>rango</strong> es un buen objetivo. Una ineficiencia <strong>lejana</strong> en un mercado en <strong>tendencia</strong> es solo una referencia.</p>
+  </div>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>09</span></div>
+</section>
+
+<!-- ============ ENVIRONMENT ============ -->
+<section class="page">
+  <div class="kicker">07 · Reconocer el entorno</div>
+  <h2>Lo más importante: el tipo de entorno</h2><div class="rule"></div>
+  <p class="lead">Lo que más aporta el Market Profile es saber <strong>qué tipo de estrategia usar ese día</strong>. Hay dos tipos de entorno y cada uno se opera distinto.</p>
+
+  <table>
+    <tr><th>Entorno</th><th>Cómo se ve</th><th>Estrategia</th></tr>
+    <tr><td class="k">Balance (rango)</td><td>Perfiles que se superponen; el precio se queda dentro de un rango.</td><td><strong>Reversión a la media</strong>: vender arriba, comprar abajo, volver al valor.</td></tr>
+    <tr><td class="k">Desequilibrio (tendencia)</td><td>Perfiles alargados, con singles; el valor se desplaza de un día a otro.</td><td><strong>Momentum</strong>: seguir el movimiento.</td></tr>
+  </table>
+
+  <div class="fig">{{SVG_ENV}}</div>
+  <p class="cap">Secuencia ilustrativa de perfiles diarios (cada barra vertical es un día).</p>
+
+  <h3>El mercado alterna entre balance y desequilibrio</h3>
+  <ol class="steps">
+    <li>Después de un <strong>día de tendencia</strong> suele venir un periodo de <strong>balance</strong>: el valor se aprieta.</li>
+    <li>Ahí el mercado se pregunta: <strong>¿este precio es valor justo?</strong></li>
+    <li>Si lo <strong>acepta</strong>, construye valor y puede seguir subiendo (markup) con más días de tendencia.</li>
+    <li>Si lo <strong>rechaza</strong> («esto está por encima del valor»), vienen días de tendencia de vuelta hacia el <strong>valor previo</strong>, donde vuelve a preguntarse lo mismo.</li>
+  </ol>
+  <div class="note">Tené un sesgo y creé en él, pero con invalidación: «si se acepta por debajo de esta zona, asumo la pérdida y sigo». Es parte del trading.</div>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>10</span></div>
+</section>
+
+<!-- ============ SUMMARY ============ -->
+<section class="page">
+  <div class="kicker">Resumen</div>
+  <h2>El error más común y cómo evitarlo</h2><div class="rule"></div>
+  <p class="lead">Lo difícil para la mayoría no es encontrar una estrategia, sino <strong>cambiar de estrategia cuando cambia el entorno</strong>.</p>
+
+  <div class="grid2">
+    <div class="card bad">
+      <div class="tag">Trader de momentum</div>
+      <p class="small" style="margin-top:4px">Le va bien en la tendencia. Llega el rango, sigue usando momentum y <strong>devuelve lo ganado</strong>.</p>
+    </div>
+    <div class="card bad">
+      <div class="tag">Trader de rango</div>
+      <p class="small" style="margin-top:4px">Le va bien en rango. Llega la tendencia, sigue buscando reversión justo cuando el precio se acepta fuera, y <strong>lo barren</strong>.</p>
+    </div>
+  </div>
+  <div class="card hl">
+    <p style="margin:0;font-size:11pt">La lección que deja el vídeo: <strong>reconocer el entorno</strong>. El Market Profile te dice rápido si estás en balance o en desequilibrio, y con eso sabés qué sistema usar.</p>
+  </div>
+
+  <h3>Qué te llevás de esta guía</h3>
+  <ul class="check">
+    <li><strong>Niveles:</strong> VAH, VAL, POC, IB, singles, colas, HVN y LVN.</li>
+    <li><strong>Sesgo:</strong> rotura y aceptación fuera del IB; aceptación por encima o por debajo de un HVN.</li>
+    <li><strong>Contexto:</strong> precio por encima o por debajo del valor justo.</li>
+    <li><strong>Entorno:</strong> rango → reversión; tendencia → momentum.</li>
+  </ul>
+
+  <h3>Glosario rápido</h3>
+  <table style="font-size:8.8pt">
+    <tr><td class="k">TPO</td><td>Time Price Opportunity: un bloque de 30 min en un precio.</td><td class="k">IB</td><td>Initial Balance: rango de la primera hora.</td></tr>
+    <tr><td class="k">VA</td><td>Área de valor: el 70% del tiempo del día.</td><td class="k">HVN</td><td>Nodo de volumen alto.</td></tr>
+    <tr><td class="k">VAH / VAL</td><td>Máximo / mínimo del área de valor.</td><td class="k">LVN</td><td>Nodo de volumen bajo.</td></tr>
+    <tr><td class="k">POC</td><td>Precio con más tiempo del día.</td><td class="k">Single</td><td>Una sola letra por precio dentro del perfil.</td></tr>
+  </table>
+
+  <p style="font-size:8.5pt;color:var(--muted);margin-top:14px">Aviso: este material es educativo y no constituye recomendación de inversión. Operar en los mercados financieros implica riesgo de pérdida. Los resultados pasados no garantizan resultados futuros.</p>
+  <div class="footer"><span>BULL ARMY · Market Profile (TPO)</span><span>11</span></div>
+</section>
+
+</body>
+</html>
