@@ -7,12 +7,16 @@ import {ZONE} from '../ReelFrame';
 // Everything is driven by a candle schedule in seconds of the voice track.
 
 // autoPressure: each candle's footprint follows its own direction instead of the phase pressure.
-export type Phase = {from: number; to: number; pressure: number; candles: [number, number, number, number][]; autoPressure?: boolean};
+// volumes: relative volume (0..1) per candle, drawn in the optional volume panel.
+export type Phase = {from: number; to: number; pressure: number; candles: [number, number, number, number][]; autoPressure?: boolean; volumes?: number[]};
 
-type Sched = {start: number; end: number; o: number; h: number; l: number; c: number; pressure: number; idx: number};
+type Sched = {start: number; end: number; o: number; h: number; l: number; c: number; pressure: number; idx: number; vol: number};
 
 // Gold outline + tag on one candle's body or wicks, between two times (seconds).
-export type Highlight = {from: number; to: number; idx: number; kind: 'body' | 'wick'; label: string};
+export type Highlight = {from: number; to: number; idx: number; kind: 'body' | 'wick' | 'volume'; label: string};
+
+// Dashed box over a group of candles (by index) between two price levels.
+export type RangeBox = {from: number; to: number; i0: number; i1: number; lo: number; hi: number; label: string; color?: string};
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
@@ -34,7 +38,7 @@ const buildSchedule = (phases: Phase[]): Sched[] => {
     const d = (ph.to - ph.from) / ph.candles.length;
     ph.candles.forEach(([o, h, l, c], k) => {
       const pr = ph.autoPressure ? Math.max(-1, Math.min(1, (c - o) / 3)) * 0.9 : ph.pressure;
-      out.push({start: ph.from + k * d, end: ph.from + (k + 1) * d, o, h, l, c, pressure: pr, idx: out.length});
+      out.push({start: ph.from + k * d, end: ph.from + (k + 1) * d, o, h, l, c, pressure: pr, idx: out.length, vol: ph.volumes?.[k] ?? 0.5});
     });
   }
   return out;
@@ -101,8 +105,13 @@ export const OrderflowSection: React.FC<{
   highlights?: Highlight[];
   // 'overlay' draws the state word over the chart; 'header' puts it on the header row.
   statePlacement?: 'overlay' | 'header';
-}> = ({t, phases, pressure, levels, top, states, rowH = DEFAULT_ROW_H, wickPressure = false, highlights = [], statePlacement = 'overlay'}) => {
+  // Volume bars under the candles: panel height in px (0 = no panel).
+  volumeHeight?: number;
+  boxes?: RangeBox[];
+}> = ({t, phases, pressure, levels, top, states, rowH = DEFAULT_ROW_H, wickPressure = false, highlights = [], statePlacement = 'overlay', volumeHeight = 0, boxes = []}) => {
   const ROW_H = rowH;
+  const FS = Math.min(16, ROW_H * 0.6);
+  const TY = FS * 0.36;
   const sched = React.useMemo(() => buildSchedule(phases), [phases]);
   const [lMin, lMax] = levels;
   const rows = lMax - lMin + 1;
@@ -132,7 +141,19 @@ export const OrderflowSection: React.FC<{
 
   return (
     <>
-      <div style={{position: 'absolute', left: CHART_X, top: top - 46, fontSize: 22, fontWeight: 600, letterSpacing: '0.22em', color: C.muted}}>
+      <div
+        style={{
+          position: 'absolute',
+          left: CHART_X,
+          top: top - 46,
+          fontSize: 22,
+          fontWeight: 600,
+          letterSpacing: '0.22em',
+          color: C.muted,
+          // In header mode the state word takes this row, so the caption steps aside.
+          opacity: statePlacement === 'header' ? 1 - stateO : 1,
+        }}
+      >
         VELAS + FOOTPRINT
       </div>
       <div style={{position: 'absolute', left: BOOK_X, width: BOOK_RIGHT - BOOK_X, top: top - 46, textAlign: 'center', fontSize: 22, fontWeight: 600, letterSpacing: '0.12em', color: C.red}}>
@@ -144,7 +165,7 @@ export const OrderflowSection: React.FC<{
       <svg width={1080} height={1920} style={{position: 'absolute'}} fontFamily={FONT}>
         <defs>
           <clipPath id="fp-clip">
-            <rect x={CHART_X - 4} y={top - 4} width={CHART_W + 8} height={bottom - top + 8} />
+            <rect x={CHART_X - 4} y={top - 4} width={CHART_W + 8} height={bottom - top + 8 + (volumeHeight ? volumeHeight + 24 : 0)} />
           </clipPath>
         </defs>
         {/* row grid */}
@@ -154,6 +175,59 @@ export const OrderflowSection: React.FC<{
 
         {/* footprint candles */}
         <g clipPath="url(#fp-clip)">
+          {/* range boxes */}
+          {boxes.map((bx, k) => {
+            const o = interpolate(t, [bx.from - 0.25, bx.from + 0.2, bx.to - 0.2, bx.to + 0.25], [0, 1, 1, 0], clamp);
+            if (o <= 0) return null;
+            const col = bx.color ?? C.gold;
+            const x0 = colX(bx.i0) - 4;
+            const x1 = colX(Math.min(bx.i1, Math.max(cur, bx.i0))) + COL_W;
+            const y0 = y(bx.hi) - ROW_H / 2 - 4;
+            const y1 = y(bx.lo) + ROW_H / 2 + 4;
+            return (
+              <g key={`box-${k}`} opacity={o}>
+                <rect x={x0} y={y0} width={Math.max(0, x1 - x0)} height={y1 - y0} rx={8} fill="rgba(227,168,43,0.07)" stroke={col} strokeWidth={2.5} strokeDasharray="10 8" />
+                <text x={x0 + 10} y={y0 - 10} fontSize={20} fontWeight={700} fill={col} fontFamily={DISPLAY} letterSpacing="0.08em">
+                  {bx.label}
+                </text>
+              </g>
+            );
+          })}
+          {/* volume panel */}
+          {volumeHeight > 0
+            ? (() => {
+                const pTop = bottom + 24;
+                const pBot = pTop + volumeHeight;
+                const maxH = volumeHeight - 26;
+                const done = sched.filter((cd) => cd.idx < cur && cd.idx >= cur - 6);
+                const avg = done.length ? done.reduce((a, cd) => a + cd.vol, 0) / done.length : 0;
+                return (
+                  <g>
+                    <line x1={CHART_X} x2={CHART_X + CHART_W} y1={pBot} y2={pBot} stroke={C.line} strokeWidth={2} />
+                    <text x={CHART_X} y={pTop + 2} fontSize={18} fontWeight={600} fill={C.muted} letterSpacing="0.2em">
+                      VOLUMEN
+                    </text>
+                    {sched.map((cd, i) => {
+                      if (i > cur) return null;
+                      const x = colX(i);
+                      if (x < CHART_X - COL_W || x > CHART_X + CHART_W) return null;
+                      const grow = i < cur || liveP >= 1 ? 1 : Math.min(1, liveP * 1.1);
+                      const h = Math.max(3, cd.vol * maxH * grow);
+                      const up = (i < cur || liveP >= 1 ? cd.c : walk(cd, liveP).price) >= cd.o;
+                      return <rect key={i} x={x + 10} y={pBot - h} width={COL_W - 20} height={h} rx={4} fill={up ? C.green : C.red} opacity={0.85} />;
+                    })}
+                    {avg > 0 ? (
+                      <g>
+                        <line x1={CHART_X} x2={CHART_X + CHART_W} y1={pBot - avg * maxH} y2={pBot - avg * maxH} stroke={C.white} strokeWidth={2} strokeDasharray="6 6" opacity={0.7} />
+                        <text x={CHART_X + CHART_W - 4} y={pBot - avg * maxH - 8} fontSize={15} fontWeight={600} textAnchor="end" fill={C.text} opacity={0.8}>
+                          PROMEDIO
+                        </text>
+                      </g>
+                    ) : null}
+                  </g>
+                );
+              })()
+            : null}
           {sched.map((cd, i) => {
             if (i > cur) return null;
             const x = colX(i);
@@ -201,10 +275,10 @@ export const OrderflowSection: React.FC<{
                         stroke={isPoc ? C.gold : 'none'}
                         strokeWidth={2}
                       />
-                      <text x={x + 32} y={y(cell.lv) + 5.5} fontSize={16} fontWeight={500} fill={strongSell ? C.white : C.text}>
+                      <text x={x + 32} y={y(cell.lv) + TY} fontSize={FS} fontWeight={500} fill={strongSell ? C.white : C.text}>
                         {cell.bid}
                       </text>
-                      <text x={x + COL_W - 12} y={y(cell.lv) + 5.5} fontSize={16} fontWeight={500} textAnchor="end" fill={strongBuy ? C.white : C.text}>
+                      <text x={x + COL_W - 12} y={y(cell.lv) + TY} fontSize={FS} fontWeight={500} textAnchor="end" fill={strongBuy ? C.white : C.text}>
                         {cell.ask}
                       </text>
                     </g>
@@ -242,6 +316,25 @@ export const OrderflowSection: React.FC<{
           const bTop = Math.max(cd.o, w.price);
           const bBot = Math.min(cd.o, w.price);
           const pad = 6;
+          if (hl.kind === 'volume') {
+            const pTop = bottom + 24;
+            const pBot = pTop + volumeHeight;
+            const grow = done ? 1 : Math.min(1, liveP * 1.1);
+            const bh = Math.max(3, cd.vol * (volumeHeight - 26) * grow);
+            const vTagW = hl.label.length * 13.5 + 28;
+            const vTagX = Math.max(CHART_X + vTagW / 2, Math.min(CHART_X + CHART_W - vTagW / 2, x + COL_W / 2));
+            const vTagY = Math.max(pTop - 4, pBot - bh - 30);
+            const pulseV = 1 + 0.06 * Math.sin(t * 8);
+            return (
+              <g key={k} opacity={o}>
+                <rect x={x + 2} y={pBot - bh - 8} width={COL_W - 4} height={bh + 14} rx={8} fill="rgba(227,168,43,0.12)" stroke={C.gold} strokeWidth={4 * pulseV} />
+                <rect x={vTagX - vTagW / 2} y={vTagY - 22} width={vTagW} height={40} rx={20} fill={C.gold} />
+                <text x={vTagX} y={vTagY + 6} textAnchor="middle" fontSize={22} fontWeight={700} fill={C.bg} fontFamily={DISPLAY}>
+                  {hl.label}
+                </text>
+              </g>
+            );
+          }
           const boxes: {y0: number; y1: number}[] = [];
           if (hl.kind === 'body') {
             boxes.push({y0: y(bTop) - ROW_H / 2, y1: y(bBot) + ROW_H / 2});
@@ -303,7 +396,7 @@ export const OrderflowSection: React.FC<{
               {isBid ? (
                 <>
                   <rect x={midL - 2 - bw} y={cy - ROW_H / 2 + 4} width={bw} height={ROW_H - 8} rx={3} fill={C.green} opacity={0.7} />
-                  <text x={midL - 8} y={cy + 5.5} fontSize={16} fontWeight={700} textAnchor="end" fill={C.white}>
+                  <text x={midL - 8} y={cy + TY} fontSize={FS} fontWeight={700} textAnchor="end" fill={C.white}>
                     {size}
                   </text>
                 </>
@@ -311,7 +404,7 @@ export const OrderflowSection: React.FC<{
               {isAsk ? (
                 <>
                   <rect x={midR + 2} y={cy - ROW_H / 2 + 4} width={bw} height={ROW_H - 8} rx={3} fill={C.red} opacity={0.7} />
-                  <text x={midR + 8} y={cy + 5.5} fontSize={16} fontWeight={700} fill={C.white}>
+                  <text x={midR + 8} y={cy + TY} fontSize={FS} fontWeight={700} fill={C.white}>
                     {size}
                   </text>
                 </>
@@ -319,7 +412,7 @@ export const OrderflowSection: React.FC<{
               {isLast ? (
                 <rect x={midL} y={cy - ROW_H / 2 + 1} width={midR - midL} height={ROW_H - 2} rx={5} fill={C.goldSoft} stroke={C.gold} strokeWidth={2} />
               ) : null}
-              <text x={(midL + midR) / 2} y={cy + 5.5} fontSize={15} fontWeight={isLast ? 700 : 500} textAnchor="middle" fill={isLast ? C.gold : C.muted}>
+              <text x={(midL + midR) / 2} y={cy + TY} fontSize={Math.min(15, FS)} fontWeight={isLast ? 700 : 500} textAnchor="middle" fill={isLast ? C.gold : C.muted}>
                 {fmt(lv)}
               </text>
             </g>

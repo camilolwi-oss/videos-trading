@@ -19,7 +19,7 @@ const renderText = (text: string) =>
     ),
   );
 
-export const Subtitles: React.FC<{pages: Page[]}> = ({pages}) => {
+export const Subtitles: React.FC<{pages: Page[]; top?: number; size?: number}> = ({pages, top = ZONE.subsTop, size = 58}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const t = frame / fps;
@@ -33,11 +33,11 @@ export const Subtitles: React.FC<{pages: Page[]}> = ({pages}) => {
         position: 'absolute',
         left: ZONE.left,
         right: 140,
-        top: ZONE.subsTop,
+        top,
         textAlign: 'center',
         fontFamily: DISPLAY,
         fontWeight: 700,
-        fontSize: 58,
+        fontSize: size,
         lineHeight: 1.18,
         color: C.white,
         opacity: p,
