@@ -11,7 +11,7 @@ import {Page, Subtitles} from '../Subtitles';
 export const REEL03_SECONDS = 50.5;
 const TITLE = 'Volumen: la tercera dimensión';
 const FACE = 'video/reel-03-cara.mp4';
-const SUBS = {top: 818, size: 46};
+const SUBS = {top: 985, size: 46};
 
 const pages: Page[] = [
   {from: 1.15, to: 3.7, text: 'Así como existe el *tiempo* y el *precio*,'},
@@ -84,48 +84,54 @@ const Flow: React.FC<{t: number}> = ({t}) => (
     phases={phases}
     pressure={pressure}
     levels={[-4, 8]}
-    top={992}
-    rowH={24}
+    top={404}
+    rowH={26}
     states={states}
     statePlacement="header"
     wickPressure
     highlights={highlights}
     boxes={boxes}
-    volumeHeight={140}
+    volumeHeight={130}
   />
 );
 
 // --- Cube scenes -----------------------------------------------------------------
-const CUBE = {cx: 540, cy: 1200, r: 118};
+// The cube lives in the top half: flat price × time square first, then it
+// extrudes into depth when the volume is named.
+const CUBE = {cx: 540, cy: 630, r: 125};
+// Turned enough that the front (time) and side (volume) faces have similar width.
+const TURN = -0.82;
+const easeOut = (x: number) => 1 - Math.pow(1 - x, 3);
 
 const CubeIntro: React.FC<{t: number}> = ({t}) => {
-  const time = interpolate(t, [1.85, 2.35], [0, 1], clamp);
-  const price = interpolate(t, [2.65, 3.15], [0, 1], clamp);
-  const volume = interpolate(t, [3.8, 4.5], [0, 1], clamp);
+  const appear = interpolate(t, [0.3, 1.0], [0, 1], clamp);
+  const time = interpolate(t, [1.85, 2.3], [0, 1], clamp);
+  const price = interpolate(t, [2.65, 3.1], [0, 1], clamp);
+  const depth = interpolate(t, [3.8, 5.4], [0, 1], {...clamp, easing: easeOut});
+  const volume = interpolate(t, [4.5, 5.3], [0, 1], clamp);
   const dots = interpolate(t, [6.6, 8.6], [0, 1], clamp);
-  // Turn only within the range where the three axis labels stay apart.
-  const angle = 0.5 + interpolate(t, [3.8, 6.4], [0, 0.75], {...clamp, easing: (x) => 1 - Math.pow(1 - x, 3)}) + 0.06 * Math.sin(t * 0.9);
+  const sway = interpolate(t, [5.4, 6.0], [0, 1], clamp) * 0.05 * Math.sin((t - 5.4) * 0.9);
   const lbl = interpolate(t, [6.6, 7.0], [0, 1], clamp);
   return (
     <>
-      <Cube3D {...CUBE} angle={angle} time={time} price={price} volume={volume} dots={dots} />
-      <div style={{position: 'absolute', left: 0, right: 0, top: 1415, textAlign: 'center', opacity: lbl}}>
-        <span style={{fontFamily: DISPLAY, fontWeight: 800, fontSize: 40, color: C.gold, letterSpacing: '0.04em'}}>VOLUMEN = PARTICIPACIÓN</span>
+      <Cube3D {...CUBE} angle={TURN * depth + sway} tilt={0.36 * depth} depth={depth} time={time} price={price} volume={volume} labels3d={depth} dots={dots} opacity={appear} />
+      <div style={{position: 'absolute', left: 0, right: 0, top: 870, textAlign: 'center', opacity: lbl}}>
+        <span style={{fontFamily: DISPLAY, fontWeight: 700, fontSize: 36, color: C.gold, letterSpacing: '0.06em'}}>VOLUMEN = PARTICIPACIÓN</span>
       </div>
     </>
   );
 };
 
 const CubeOutro: React.FC<{t: number}> = ({t}) => {
-  const dots = interpolate(t, [43.72, 46.6], [0.1, 1], clamp);
-  const angle = 1.0 + 0.22 * Math.sin((t - 41.4) * 0.9);
+  const dots = interpolate(t, [43.72, 46.6], [0.15, 1], clamp);
+  const sway = 0.08 * Math.sin((t - 41.4) * 0.8);
   const q1 = interpolate(t, [43.72, 44.1], [0, 1], clamp);
   const q2 = interpolate(t, [46.95, 47.3], [0, 1], clamp);
   return (
     <>
-      <Cube3D {...CUBE} angle={angle} time={1} price={1} volume={1} dots={dots} />
-      <div style={{position: 'absolute', left: 0, right: 0, top: 1415, textAlign: 'center'}}>
-        <span style={{fontFamily: DISPLAY, fontWeight: 800, fontSize: 38, color: C.gold, opacity: q2 > 0 ? q2 : q1}}>
+      <Cube3D {...CUBE} angle={TURN + sway} tilt={0.36} depth={1} time={1} price={1} volume={1} labels3d={1} dots={dots} />
+      <div style={{position: 'absolute', left: 0, right: 0, top: 870, textAlign: 'center'}}>
+        <span style={{fontFamily: DISPLAY, fontWeight: 700, fontSize: 36, color: C.gold, opacity: q2 > 0 ? q2 : q1}}>
           {q2 > 0 ? '¿CÓMO ESTÁ EL VOLUMEN?' : '¿CUÁNTOS PARTICIPAN?'}
         </span>
       </div>
@@ -136,7 +142,7 @@ const CubeOutro: React.FC<{t: number}> = ({t}) => {
 const Outro: React.FC<{t: number}> = ({t}) => {
   const a = interpolate(t, [48.0, 48.4], [0, 1], clamp);
   return (
-    <div style={{position: 'absolute', left: 60, width: 880, top: 1010, opacity: a}}>
+    <div style={{position: 'absolute', left: 60, width: 880, top: 420, opacity: a}}>
       <Kicker size={28}>Seguí la serie</Kicker>
       <div style={{display: 'flex', gap: 12, marginTop: 30}}>
         {new Array(10).fill(0).map((_, i) => (
@@ -192,8 +198,8 @@ export const Reel03: React.FC = () => {
 // Static cover: face on top, the cube with its three axes below.
 export const Reel03Cover: React.FC = () => (
   <SplitFrame num={3} title={TITLE} faceSrc={FACE} faceTrimBefore={420} still>
-    <Cube3D {...CUBE} angle={1.15} time={1} price={1} volume={1} dots={0.6} />
-    <div style={{position: 'absolute', left: 0, right: 0, top: 860, textAlign: 'center', fontFamily: DISPLAY, fontWeight: 800, fontSize: 52, color: C.gold}}>
+    <Cube3D {...CUBE} angle={TURN} tilt={0.36} depth={1} time={1} price={1} volume={1} labels3d={1} dots={0.6} />
+    <div style={{position: 'absolute', left: 0, right: 0, top: 860, textAlign: 'center', fontFamily: DISPLAY, fontWeight: 800, fontSize: 46, color: C.gold}}>
       El volumen es participación
     </div>
   </SplitFrame>
