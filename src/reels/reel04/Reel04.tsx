@@ -51,9 +51,10 @@ const appear = (t: number, at: number, d = 0.3) => interpolate(t, [at, at + d], 
 type Pt = [number, number];
 
 // Bearish MSB, like the left drawing of the reference: higher lows, the last
-// higher low (p4) breaks into a lower low, the retest makes a lower high
-// rejected from supply, then price continues down.
-const BEAR: Pt[] = [[90, 1150], [230, 900], [320, 1045], [450, 805], [540, 965], [660, 690], [770, 1105], [860, 875], [990, 1190]];
+// higher low (p4) breaks into a lower low (MSB). The last higher high (p5),
+// where the bearish engulfing starts, is the order block / ceiling. The retest
+// (p7) stops right on the MSB level and price continues down.
+const BEAR: Pt[] = [[90, 1150], [230, 900], [320, 1045], [450, 805], [540, 965], [660, 690], [770, 1105], [860, 965], [990, 1190]];
 // Bullish MSB: the mirror image around the middle of the visual zone.
 const MID_Y = 940;
 const BULL: Pt[] = BEAR.map(([x, y]) => [x, 2 * MID_Y - y]);
@@ -125,7 +126,8 @@ type Labels = {
   msbAt: number;
   breakChip: {text: string; at: number; to: number};
   controlChip?: {text: string; at: number; to: number; color: string};
-  zone: {i: number; color: string; tint: string; at: number; label1: {text: string; at: number}; label2: {text: string; at: number}};
+  // order block drawn on the last extreme before the break (point 5)
+  zone: {color: string; tint: string; at: number; label1: {text: string; at: number}; label2: {text: string; at: number}};
   confirmChip?: {text: string; at: number; to: number};
 };
 
@@ -134,11 +136,14 @@ const MsbScene: React.FC<{t: number; pts: Pt[]; s: number; bullish: boolean; lab
   const lvl = pts[4][1];
   const cx = crossX(pts[5], pts[6], lvl);
   const crossS = 5 + (cx - pts[5][0]) / (pts[6][0] - pts[5][0]);
-  const msbGrow = interpolate(s, [4.2, crossS], [0, 1], clamp);
+  // the MSB line reaches the break first, then extends right as price goes on
+  const msbGrow = interpolate(s, [4.2, crossS, 7], [0, (cx + 40 - pts[4][0]) / (1020 - pts[4][0]), 1], clamp);
   const z = labels.zone;
-  const zy = pts[z.i][1];
-  const zTop = bullish ? zy - 26 : zy - 34;
-  const zBot = bullish ? zy + 34 : zy + 26;
+  const zy = pts[5][1];
+  const zTop = bullish ? zy - 74 : zy - 16;
+  const zBot = bullish ? zy + 16 : zy + 74;
+  const zX = pts[5][0] - 60;
+  const retestO = s >= 6.98 ? appear(t, labels.swing[3].at, 0.3) : 0;
   const zoneO = appear(t, z.at, 0.4);
   const end = pointAt(pts, s);
   const prev = pointAt(pts, Math.max(0, s - 0.15));
@@ -148,11 +153,11 @@ const MsbScene: React.FC<{t: number; pts: Pt[]; s: number; bullish: boolean; lab
       {/* supply / demand zone */}
       {zoneO > 0 ? (
         <g opacity={zoneO}>
-          <rect x={pts[z.i - 2][0]} y={zTop} width={1020 - pts[z.i - 2][0]} height={zBot - zTop} fill={z.tint} stroke={z.color} strokeWidth={1.6} strokeDasharray="8 6" rx={4} />
-          <text x={1012} y={bullish ? zBot + 34 : zTop - 14} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={28} fill={z.color} letterSpacing="0.08em" opacity={appear(t, z.label1.at)}>
+          <rect x={zX} y={zTop} width={1020 - zX} height={zBot - zTop} fill={z.tint} stroke={z.color} strokeWidth={2.4} rx={4} />
+          <text x={1008} y={zTop + 34} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={28} fill={z.color} letterSpacing="0.08em" opacity={appear(t, z.label1.at)}>
             {z.label1.text}
           </text>
-          <text x={1012} y={bullish ? zBot + 68 : zTop - 48} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={28} fill={C.gold} letterSpacing="0.08em" opacity={appear(t, z.label2.at)}>
+          <text x={1008} y={zTop + 66} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={28} fill={C.gold} letterSpacing="0.08em" opacity={appear(t, z.label2.at)}>
             {z.label2.text}
           </text>
         </g>
@@ -160,9 +165,18 @@ const MsbScene: React.FC<{t: number; pts: Pt[]; s: number; bullish: boolean; lab
       {/* MSB level */}
       {msbGrow > 0 ? (
         <g>
-          <line x1={pts[4][0]} x2={pts[4][0] + (cx + 70 - pts[4][0]) * msbGrow} y1={lvl} y2={lvl} stroke={C.red} strokeWidth={3} />
+          <line x1={pts[4][0]} x2={pts[4][0] + (1020 - pts[4][0]) * msbGrow} y1={lvl} y2={lvl} stroke={C.red} strokeWidth={3} />
           <text x={(pts[4][0] + cx) / 2 + 20} y={bullish ? lvl + 40 : lvl - 16} textAnchor="middle" fontFamily={DISPLAY} fontWeight={800} fontSize={34} fill={C.red} opacity={appear(t, labels.msbAt)} letterSpacing="0.06em">
             MSB
+          </text>
+        </g>
+      ) : null}
+      {/* the retest touches the MSB line and is rejected */}
+      {retestO > 0 ? (
+        <g opacity={retestO}>
+          <circle cx={pts[7][0]} cy={lvl} r={18 + 10 * Math.abs(Math.sin(t * 5))} fill="none" stroke={C.gold} strokeWidth={3} />
+          <text x={pts[7][0] + 34} y={bullish ? lvl + 44 : lvl - 26} fontFamily={FONT} fontWeight={700} fontSize={26} fill={C.gold} letterSpacing="0.06em">
+            RETESTEO
           </text>
         </g>
       ) : null}
@@ -205,9 +219,9 @@ const BEAR_LABELS: Labels = {
     {i: 7, text: 'LH', at: 30.44, below: false, side: true},
   ],
   msbAt: 23.6,
-  breakChip: {text: 'QUIEBRE', at: 24.7, to: 26.9},
+  breakChip: {text: 'ENVOLVENTE BAJISTA', at: 24.7, to: 26.9},
   controlChip: {text: 'COMPRADORES EN CONTROL', at: 20.46, to: 22.0, color: C.green},
-  zone: {i: 7, color: C.red, tint: 'rgba(240,70,90,0.12)', at: 27.4, label1: {text: 'OFERTA', at: 31.76}, label2: {text: 'ORDER BLOCK', at: 33.67}},
+  zone: {color: C.red, tint: 'rgba(240,70,90,0.16)', at: 24.9, label1: {text: 'ORDER BLOCK', at: 25.2}, label2: {text: 'TECHO', at: 26.98}},
   confirmChip: {text: 'CONFIRMACIÓN', at: 35.3, to: 37.2},
 };
 const BULL_LABELS: Labels = {
@@ -218,8 +232,8 @@ const BULL_LABELS: Labels = {
     {i: 7, text: 'HL', at: 52.31, below: true, side: true},
   ],
   msbAt: 46.4,
-  breakChip: {text: 'QUIEBRE ALCISTA', at: 50.95, to: 52.2},
-  zone: {i: 7, color: C.green, tint: 'rgba(38,194,129,0.12)', at: 52.6, label1: {text: 'DEMANDA', at: 53.9}, label2: {text: 'ORDER BLOCK', at: 55.46}},
+  breakChip: {text: 'ENVOLVENTE ALCISTA', at: 50.95, to: 52.2},
+  zone: {color: C.green, tint: 'rgba(38,194,129,0.16)', at: 48.2, label1: {text: 'ORDER BLOCK', at: 48.5}, label2: {text: 'PISO', at: 52.31}},
   confirmChip: {text: 'HACIA ARRIBA', at: 56.8, to: 58.4},
 };
 
@@ -290,7 +304,7 @@ const Mirror: React.FC<{t: number}> = ({t}) => {
     <>
       <svg width={1080} height={1920} style={{position: 'absolute', left: 0, top: 0}}>
         <g transform={`translate(0 ${MID_Y}) scale(1 ${k}) translate(0 ${-MID_Y})`}>
-          <line x1={BEAR[4][0]} x2={crossX(BEAR[5], BEAR[6], lvl) + 70} y1={lvl} y2={lvl} stroke={C.red} strokeWidth={3} />
+          <line x1={BEAR[4][0]} x2={1020} y1={lvl} y2={lvl} stroke={C.red} strokeWidth={3} />
           <path d={pathTo(BEAR, 8)} fill="none" stroke={C.white} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
         </g>
       </svg>
