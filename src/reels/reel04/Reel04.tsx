@@ -133,10 +133,13 @@ const MsbScene: React.FC<{t: number; pts: Pt[]; s: number; bullish: boolean; lab
   // the MSB line reaches the break first, then extends right as price goes on
   const msbGrow = interpolate(s, [4.2, crossS, 7], [0, (cx + 40 - pts[4][0]) / (1020 - pts[4][0]), 1], clamp);
   const z = labels.zone;
-  const zy = pts[5][1];
-  const zTop = bullish ? zy - 74 : zy - 16;
-  const zBot = bullish ? zy + 16 : zy + 74;
-  const zX = pts[5][0] - 60;
+  // Order block = the last leg before the break: from the previous swing
+  // (point 3) to the swing the MSB line starts from (point 4), extended right
+  // past the retest, which touches its MSB-side edge.
+  const zTop = Math.min(pts[3][1], pts[4][1]);
+  const zBot = Math.max(pts[3][1], pts[4][1]);
+  const zX = pts[3][0];
+  const zX2 = Math.min(1020, pts[7][0] + 110);
   const retestAt = labels.swing.find((sw) => sw.i === 7)?.at ?? 0;
   const retestO = s >= 6.98 ? appear(t, retestAt, 0.3) : 0;
   const zoneO = appear(t, z.at, 0.4);
@@ -148,11 +151,12 @@ const MsbScene: React.FC<{t: number; pts: Pt[]; s: number; bullish: boolean; lab
       {/* supply / demand zone */}
       {zoneO > 0 ? (
         <g opacity={zoneO}>
-          <rect x={zX} y={zTop} width={1020 - zX} height={zBot - zTop} fill={z.tint} stroke={z.color} strokeWidth={2.4} rx={4} />
-          <text x={1008} y={zTop + 34} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={28} fill={z.color} letterSpacing="0.08em" opacity={appear(t, z.label1.at)}>
+          <rect x={zX} y={zTop} width={zX2 - zX} height={zBot - zTop} fill={z.tint} stroke={z.color} strokeWidth={2.4} rx={4} />
+          {/* labels outside the box, away from the retest: above (bearish) or below (bullish) */}
+          <text x={zX2} y={bullish ? zBot + 34 : zTop - 44} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={28} fill={z.color} letterSpacing="0.08em" opacity={appear(t, z.label1.at)}>
             {z.label1.text}
           </text>
-          <text x={1008} y={zTop + 66} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={28} fill={C.gold} letterSpacing="0.08em" opacity={appear(t, z.label2.at)}>
+          <text x={zX2} y={bullish ? zBot + 66 : zTop - 12} textAnchor="end" fontFamily={FONT} fontWeight={700} fontSize={28} fill={C.gold} letterSpacing="0.08em" opacity={appear(t, z.label2.at)}>
             {z.label2.text}
           </text>
         </g>
@@ -230,7 +234,7 @@ const BULL_LABELS: Labels = {
     {i: 7, text: 'HL', at: 32.23, below: true, side: true},
   ],
   msbAt: 29.6,
-  breakChip: {text: 'ENVOLVENTE ALCISTA', at: 29.8, to: 31.8},
+  breakChip: {text: 'ENVOLVENTE ALCISTA', at: 29.8, to: 31.5},
   zone: {color: C.green, tint: 'rgba(38,194,129,0.16)', at: 30.3, label1: {text: 'ORDER BLOCK', at: 30.4}, label2: {text: 'PISO', at: 30.5}},
   confirmChip: {text: 'PUNTO DE REBOTE', at: 32.23, to: 34.5},
 };
