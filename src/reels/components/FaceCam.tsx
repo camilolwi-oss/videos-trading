@@ -5,8 +5,9 @@ import {C} from '../../theme';
 
 // The speaker's webcam, cropped square beforehand and shown in a gold ring.
 // Muted: the voice comes from the normalized audio track.
-export const FaceCam: React.FC<{src: string; left: number; top: number; size: number}> = ({src, left, top, size}) => {
-  const p = useEnter(4, 20);
+export const FaceCam: React.FC<{src: string; left: number; top: number; size: number; still?: boolean; trimBefore?: number}> = ({src, left, top, size, still = false, trimBefore}) => {
+  const enter = useEnter(4, 20);
+  const p = still ? 1 : enter;
   return (
     <div
       style={{
@@ -24,7 +25,7 @@ export const FaceCam: React.FC<{src: string; left: number; top: number; size: nu
       }}
     >
       <div style={{width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: C.bg}}>
-        <OffthreadVideo src={staticFile(src)} muted style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+        <OffthreadVideo src={staticFile(src)} muted trimBefore={trimBefore} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
       </div>
     </div>
   );

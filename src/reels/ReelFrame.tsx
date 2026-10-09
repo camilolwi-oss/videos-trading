@@ -32,10 +32,13 @@ export const ReelFrame: React.FC<{
   titleRight?: number;
   titleSize?: number;
   kickerSize?: number;
-}> = ({num, title, children, titleRight = 140, titleSize = 84, kickerSize = 28}) => {
+  // A single still frame (cover): show everything without the entry animation.
+  still?: boolean;
+}> = ({num, title, children, titleRight = 140, titleSize = 84, kickerSize = 28, still = false}) => {
   const frame = useCurrentFrame();
-  const p = useEnter(0, 18);
-  const line = ease(frame, 4, 24);
+  const enter = useEnter(0, 18);
+  const p = still ? 1 : enter;
+  const line = still ? 1 : ease(frame, 4, 24);
   return (
     <Background>
       <div style={{position: 'absolute', left: ZONE.left, right: titleRight, top: ZONE.titleTop}}>

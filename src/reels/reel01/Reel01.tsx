@@ -271,7 +271,7 @@ export const Reel01: React.FC = () => {
 
 // Static cover for the profile grid (title + chart, inside the 3:4 crop).
 export const Reel01Cover: React.FC = () => (
-  <ReelFrame num={1} title="El gráfico no imprime velas">
+  <ReelFrame num={1} title="El gráfico no imprime velas" still>
     <div style={{position: 'absolute', left: ZONE.left, top: 590}}>
       <CandleChart candles={candles} width={960} height={640} shown={candles.length} />
     </div>

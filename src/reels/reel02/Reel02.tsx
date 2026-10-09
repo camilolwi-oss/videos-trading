@@ -172,8 +172,8 @@ export const Reel02: React.FC = () => {
 
 // Static cover: the big-body candle highlighted.
 export const Reel02Cover: React.FC = () => (
-  <ReelFrame num={2} title={TITLE} {...FRAME}>
-    <FaceCam {...FACE} />
+  <ReelFrame num={2} title={TITLE} {...FRAME} still>
+    <FaceCam {...FACE} still trimBefore={300} />
     <Flow t={12.5} />
     <div
       style={{
