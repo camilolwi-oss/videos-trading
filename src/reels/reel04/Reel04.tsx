@@ -1,46 +1,38 @@
 import React from 'react';
-import {Audio, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Audio, interpolate, random, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Kicker} from '../../components/ui';
 import {C, DISPLAY, FONT} from '../../theme';
-import {ReelFrame} from '../ReelFrame';
+import {SplitFrame} from '../SplitFrame';
 import {Page, Subtitles} from '../Subtitles';
 
-// Timings (seconds) come from the voice track public/audio/reel-04.m4a.
-export const REEL04_SECONDS = 66.5;
+// Timings (seconds) come from the voice of the webcam recording
+// (public/audio/reel-04.m4a, video public/video/reel-04-cara.mp4).
+export const REEL04_SECONDS = 47.5;
 const TITLE = 'MSB: quiebre de estructura';
+const FACE = 'video/reel-04-cara.mp4';
+const SUBS = {top: 985, size: 46};
 
 const pages: Page[] = [
-  {from: 0.83, to: 4.2, text: 'El mercado te avisa cuando va a cambiar de *dirección*,'},
-  {from: 4.39, to: 5.62, text: 'y a eso se le llama *quiebre de estructura*.'},
-  {from: 5.78, to: 7.58, text: 'Hoy vamos a ver qué es un *MSB*.'},
-  {from: 7.97, to: 9.6, text: 'Es el momento en que el precio pierde'},
-  {from: 9.6, to: 11.25, text: 'una *secuencia* que venía respetando,'},
-  {from: 11.36, to: 12.9, text: 'y es la primera señal de que el *control*'},
-  {from: 12.9, to: 14.19, text: 'está cambiando de manos.'},
-  {from: 14.27, to: 16.51, text: 'Imaginá una *tendencia alcista*:'},
-  {from: 16.71, to: 18.4, text: 'el precio hace *mínimos cada vez más altos*.'},
-  {from: 18.4, to: 20.26, text: 'Mientras esos mínimos se respeten,'},
-  {from: 20.46, to: 21.96, text: 'los *compradores* van a tener el control.'},
-  {from: 22.1, to: 24.5, text: 'Pero cuando el precio *rompe* el último mínimo más alto'},
-  {from: 24.5, to: 26.85, text: 'y hace un *mínimo más bajo*, ahí tenés el *quiebre*.'},
-  {from: 26.98, to: 30.26, text: 'Después, el precio suele volver a *retestear* esa zona,'},
-  {from: 30.44, to: 31.67, text: 'hace un *máximo más bajo*'},
-  {from: 31.76, to: 33.53, text: 'y es rechazado desde una zona de *oferta*,'},
-  {from: 33.67, to: 35.3, text: 'lo que después se convierte en un *order block*'},
-  {from: 35.3, to: 37.03, text: 'o una *confirmación* del movimiento.'},
-  {from: 37.71, to: 40.12, text: 'En una situación alcista funciona *al revés*.'},
-  {from: 40.71, to: 42.0, text: 'En una tendencia bajista,'},
-  {from: 42.14, to: 44.47, text: 'el precio hace *máximos cada vez más bajos*.'},
-  {from: 44.62, to: 47.19, text: 'Cuando se rompe ese último *máximo más bajo*'},
-  {from: 47.78, to: 50.79, text: 'y se hace un *máximo más alto*,'},
-  {from: 50.95, to: 52.14, text: 'se produce el *quiebre estructural alcista*.'},
-  {from: 52.31, to: 53.9, text: 'Luego hace un *mínimo más alto*'},
-  {from: 53.9, to: 55.29, text: 'con soporte en la zona de *demanda*,'},
-  {from: 55.46, to: 56.8, text: 'y eso se vuelve un *order block*'},
-  {from: 56.8, to: 58.22, text: 'para un movimiento hacia arriba.'},
-  {from: 58.63, to: 60.19, text: 'Recordá: estas estructuras'},
-  {from: 60.3, to: 61.7, text: 'siempre se *confirman* en el retesteo,'},
-  {from: 62.0, to: 65.16, text: 'y si la ruptura viene con *volumen*, mejor todavía.'},
+  {from: 0.72, to: 4.01, text: 'Cuando el mercado está en una *tendencia alcista*, es decir,'},
+  {from: 4.12, to: 6.8, text: 'hace *mínimos más altos* y *máximos más altos*,'},
+  {from: 6.88, to: 8.41, text: 'existen *señales de debilidad*,'},
+  {from: 8.58, to: 11.64, text: 'como por ejemplo que el precio haga un *mínimo más bajo*.'},
+  {from: 11.75, to: 14.87, text: 'En este tipo de situaciones, el precio va a intentar *recuperar el nivel*,'},
+  {from: 15.34, to: 18.07, text: 'y al *fallarlo*, queremos ver un volumen'},
+  {from: 18.23, to: 20.14, text: 'por *encima del promedio*'},
+  {from: 20.22, to: 21.5, text: 'para confirmarnos un *quiebre*'},
+  {from: 21.5, to: 22.74, text: 'y una continuación *bajista*.'},
+  {from: 23.82, to: 25.08, text: 'Lo mismo en *sentido contrario*:'},
+  {from: 25.18, to: 28.1, text: 'tenemos *mínimos más bajos*, y el precio'},
+  {from: 28.36, to: 30.81, text: 'intenta recuperar el *previo máximo* antes de que marquemos el *piso*.'},
+  {from: 31.0, to: 32.16, text: 'Si se utiliza ese nivel'},
+  {from: 32.23, to: 34.5, text: 'como un *punto de rebote*, vamos a tener'},
+  {from: 34.5, to: 36.4, text: 'que ver *volumen por encima del promedio*'},
+  {from: 36.4, to: 38.28, text: 'para ver una *continuación* en el movimiento.'},
+  {from: 38.71, to: 40.58, text: 'Esto es algo que nos define'},
+  {from: 40.9, to: 43.18, text: 'cómo operar un *cambio de tendencia*.'},
+  {from: 43.4, to: 44.64, text: 'Si te gustó, *apoyanos*.'},
+  {from: 44.72, to: 46.33, text: '¡Nos vemos en el próximo video!'},
 ];
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
@@ -54,9 +46,11 @@ type Pt = [number, number];
 // higher low (p4) breaks into a lower low (MSB). The last higher high (p5),
 // where the bearish engulfing starts, is the order block / ceiling. The retest
 // (p7) stops right on the MSB level and price continues down.
-const BEAR: Pt[] = [[90, 1150], [230, 900], [320, 1045], [450, 805], [540, 965], [660, 690], [770, 1105], [860, 965], [990, 1190]];
-// Bullish MSB: the mirror image around the middle of the visual zone.
-const MID_Y = 940;
+// Drawn in the top half of the split screen (y 460–840).
+const BEAR: Pt[] = [[90, 810], [230, 620], [320, 730], [450, 547], [540, 669], [660, 460], [770, 775], [860, 669], [990, 840]];
+// Bullish MSB: the mirror image around the middle of the drawing.
+const MID_Y = 650;
+const CHIP_Y = 372;
 const BULL: Pt[] = BEAR.map(([x, y]) => [x, 2 * MID_Y - y]);
 
 // Point along the polyline at progress s (s = 3.5 → halfway from point 3 to 4).
@@ -143,7 +137,8 @@ const MsbScene: React.FC<{t: number; pts: Pt[]; s: number; bullish: boolean; lab
   const zTop = bullish ? zy - 74 : zy - 16;
   const zBot = bullish ? zy + 16 : zy + 74;
   const zX = pts[5][0] - 60;
-  const retestO = s >= 6.98 ? appear(t, labels.swing[3].at, 0.3) : 0;
+  const retestAt = labels.swing.find((sw) => sw.i === 7)?.at ?? 0;
+  const retestO = s >= 6.98 ? appear(t, retestAt, 0.3) : 0;
   const zoneO = appear(t, z.at, 0.4);
   const end = pointAt(pts, s);
   const prev = pointAt(pts, Math.max(0, s - 0.15));
@@ -198,107 +193,78 @@ const MsbScene: React.FC<{t: number; pts: Pt[]; s: number; bullish: boolean; lab
         );
       })}
       {labels.controlChip ? (
-        <Pill x={330} y={620} text={labels.controlChip.text} o={win(t, labels.controlChip.at, labels.controlChip.to)} color={labels.controlChip.color} size={28} />
+        <Pill x={330} y={CHIP_Y} text={labels.controlChip.text} o={win(t, labels.controlChip.at, labels.controlChip.to)} color={labels.controlChip.color} size={28} />
       ) : null}
-      <Pill x={780} y={620} text={labels.breakChip.text} o={breakO} color={C.red} size={28} />
+      <Pill x={760} y={CHIP_Y} text={labels.breakChip.text} o={breakO} color={bullish ? C.green : C.red} size={28} />
       {labels.confirmChip ? (
-        <Pill x={780} y={620} text={labels.confirmChip.text} o={win(t, labels.confirmChip.at, labels.confirmChip.to)} color={C.gold} size={28} />
+        <Pill x={760} y={CHIP_Y} text={labels.confirmChip.text} o={win(t, labels.confirmChip.at, labels.confirmChip.to)} color={C.gold} size={28} />
       ) : null}
     </svg>
   );
 };
 
-const bearS = (t: number) => interpolate(t, [14.27, 20.2, 22.1, 24.4, 26.98, 29.6, 33.67, 35.6], [0, 5, 5, 6, 6, 7, 7, 8], clamp);
-const bullS = (t: number) => interpolate(t, [40.71, 44.4, 44.62, 47.1, 52.31, 54.6, 55.46, 57.6], [0, 5, 5, 6, 6, 7, 7, 8], clamp);
+// Path progress (point index) over time, following the voice.
+const bearS = (t: number) => interpolate(t, [0.9, 6.8, 8.6, 11.0, 11.9, 14.6, 18.2, 21.6], [0, 5, 5, 6, 6, 7, 7, 8], clamp);
+const bullS = (t: number) => interpolate(t, [25.18, 28.1, 28.36, 30.2, 31.0, 33.6, 34.5, 37.4], [0, 5, 5, 6, 6, 7, 7, 8], clamp);
 
 const BEAR_LABELS: Labels = {
   swing: [
-    {i: 2, text: 'HL', at: 17.2, below: true},
-    {i: 4, text: 'HL', at: 18.6, below: true},
-    {i: 6, text: 'LL', at: 24.6, below: true},
-    {i: 7, text: 'LH', at: 30.44, below: false, side: true},
+    {i: 2, text: 'HL', at: 4.6, below: true},
+    {i: 3, text: 'HH', at: 5.4, below: false},
+    {i: 4, text: 'HL', at: 5.9, below: true},
+    {i: 6, text: 'LL', at: 10.9, below: true},
+    {i: 7, text: 'LH', at: 15.34, below: false, side: true},
   ],
-  msbAt: 23.6,
-  breakChip: {text: 'ENVOLVENTE BAJISTA', at: 24.7, to: 26.9},
-  controlChip: {text: 'COMPRADORES EN CONTROL', at: 20.46, to: 22.0, color: C.green},
-  zone: {color: C.red, tint: 'rgba(240,70,90,0.16)', at: 24.9, label1: {text: 'ORDER BLOCK', at: 25.2}, label2: {text: 'TECHO', at: 26.98}},
-  confirmChip: {text: 'CONFIRMACIÓN', at: 35.3, to: 37.2},
+  msbAt: 10.4,
+  breakChip: {text: 'ENVOLVENTE BAJISTA', at: 10.9, to: 14.8},
+  controlChip: {text: 'SEÑALES DE DEBILIDAD', at: 6.88, to: 8.5, color: C.gold},
+  zone: {color: C.red, tint: 'rgba(240,70,90,0.16)', at: 11.2, label1: {text: 'ORDER BLOCK', at: 11.5}, label2: {text: 'TECHO', at: 12.2}},
+  confirmChip: {text: 'FALLA EL RETESTEO', at: 15.34, to: 18.1},
 };
 const BULL_LABELS: Labels = {
   swing: [
-    {i: 2, text: 'LH', at: 42.8, below: false},
-    {i: 4, text: 'LH', at: 43.8, below: false},
-    {i: 6, text: 'HH', at: 47.78, below: false},
-    {i: 7, text: 'HL', at: 52.31, below: true, side: true},
+    {i: 3, text: 'LL', at: 26.4, below: true},
+    {i: 4, text: 'LH', at: 27.0, below: false},
+    {i: 5, text: 'LL', at: 27.9, below: true, side: true},
+    {i: 6, text: 'HH', at: 30.0, below: false},
+    {i: 7, text: 'HL', at: 32.23, below: true, side: true},
   ],
-  msbAt: 46.4,
-  breakChip: {text: 'ENVOLVENTE ALCISTA', at: 50.95, to: 52.2},
-  zone: {color: C.green, tint: 'rgba(38,194,129,0.16)', at: 48.2, label1: {text: 'ORDER BLOCK', at: 48.5}, label2: {text: 'PISO', at: 52.31}},
-  confirmChip: {text: 'HACIA ARRIBA', at: 56.8, to: 58.4},
+  msbAt: 29.6,
+  breakChip: {text: 'ENVOLVENTE ALCISTA', at: 29.8, to: 31.8},
+  zone: {color: C.green, tint: 'rgba(38,194,129,0.16)', at: 30.3, label1: {text: 'ORDER BLOCK', at: 30.4}, label2: {text: 'PISO', at: 30.5}},
+  confirmChip: {text: 'PUNTO DE REBOTE', at: 32.23, to: 34.5},
 };
 
-// --- intro, definition, mirror and close ----------------------------------------
-const Intro: React.FC<{t: number}> = ({t}) => {
-  const s = interpolate(t, [0.9, 4.3], [0, 6.4], clamp);
-  const dim = interpolate(t, [5.5, 6.0], [1, 0.22], clamp);
-  const flash = win(t, 4.39, 5.6, 0.2);
-  const big = appear(t, 5.78, 0.4);
+// Volume under the drawing: bars appear as the path passes them; the
+// continuation after the failed retest prints volume above the average.
+const VOL = {base: 945, max: 66, avg: 0.42};
+const VolumeStrip: React.FC<{t: number; pts: Pt[]; s: number; color: string; tagAt: number; tagTo: number}> = ({t, pts, s, color, tagAt, tagTo}) => {
+  const n = 26;
+  const reach = pointAt(pts, s)[0];
+  const tag = win(t, tagAt, tagTo, 0.25);
   return (
-    <>
-      <svg width={1080} height={1920} style={{position: 'absolute', left: 0, top: 0, opacity: dim}}>
-        <line x1={BEAR[4][0]} x2={1000} y1={BEAR[4][1]} y2={BEAR[4][1]} stroke={C.red} strokeWidth={3} opacity={flash} />
-        <path d={pathTo(BEAR, s)} fill="none" stroke={C.white} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
-      </svg>
-      <div style={{position: 'absolute', left: 0, right: 0, top: 760, textAlign: 'center', opacity: big, transform: `scale(${0.9 + big * 0.1})`}}>
-        <div style={{fontFamily: DISPLAY, fontWeight: 800, fontSize: 230, lineHeight: 1, color: C.red, letterSpacing: '0.02em'}}>MSB</div>
-        <Kicker size={30} style={{marginTop: 18}}>
-          Market Structure Break
-        </Kicker>
-      </div>
-    </>
+    <svg width={1080} height={1920} style={{position: 'absolute', left: 0, top: 0}}>
+      <text x={60} y={VOL.base - VOL.max - 6} fontFamily={FONT} fontWeight={600} fontSize={18} fill={C.muted} letterSpacing="0.2em">
+        VOLUMEN
+      </text>
+      {new Array(n).fill(0).map((_, i) => {
+        const x = 90 + i * 35.5;
+        if (s <= 0 || x > reach) return null;
+        const strong = x >= pts[7][0] - 4;
+        const mid = x >= pts[5][0] && x < pts[6][0];
+        const h = strong ? 0.92 + 0.08 * random(`v4-${i}`) : mid ? 0.5 : 0.22 + 0.18 * random(`v4-${i}`);
+        return <rect key={i} x={x} y={VOL.base - h * VOL.max} width={24} height={h * VOL.max} rx={3} fill={strong ? color : C.gray} opacity={strong ? 0.95 : 0.7} />;
+      })}
+      <line x1={86} x2={1010} y1={VOL.base - VOL.avg * VOL.max} y2={VOL.base - VOL.avg * VOL.max} stroke={C.white} strokeWidth={2} strokeDasharray="6 6" opacity={0.6} />
+      {tag > 0 ? <Pill x={340} y={VOL.base - VOL.max - 16} text="VOLUMEN > PROMEDIO" o={tag} color={color} size={22} /> : null}
+    </svg>
   );
 };
 
-const Definition: React.FC<{t: number}> = ({t}) => {
-  const seq = ['HL', 'HL', 'HL'];
-  const broken = appear(t, 10.2, 0.3);
-  const hands = appear(t, 11.36, 0.4);
-  const flow = interpolate(t, [12.0, 13.4], [0, 1], clamp);
-  return (
-    <div style={{position: 'absolute', left: 60, width: 880, top: 640}}>
-      <Kicker size={24} color={C.muted}>
-        La secuencia
-      </Kicker>
-      <div style={{display: 'flex', gap: 18, alignItems: 'center', marginTop: 22}}>
-        {seq.map((s, i) => {
-          const o = appear(t, 8.0 + i * 0.55);
-          return (
-            <React.Fragment key={i}>
-              <div style={{opacity: o, border: `1.6px solid ${C.white}`, borderRadius: 40, padding: '10px 26px', fontSize: 34, fontWeight: 600}}>{s}</div>
-              <div style={{opacity: o, color: C.muted, fontSize: 34}}>→</div>
-            </React.Fragment>
-          );
-        })}
-        <div style={{opacity: broken, border: `1.6px solid ${C.red}`, color: C.red, borderRadius: 40, padding: '10px 26px', fontSize: 34, fontWeight: 700}}>LL ✕</div>
-      </div>
-      <div style={{marginTop: 70, opacity: hands}}>
-        <Kicker size={24} color={C.muted}>
-          El control cambia de manos
-        </Kicker>
-        <div style={{display: 'flex', alignItems: 'center', gap: 20, marginTop: 22, fontFamily: DISPLAY, fontWeight: 800, fontSize: 52}}>
-          <span style={{color: C.green, opacity: 1 - flow * 0.6}}>COMPRADORES</span>
-          <span style={{color: C.gold, transform: `translateX(${flow * 14}px)`}}>→</span>
-          <span style={{color: C.red, opacity: 0.4 + flow * 0.6}}>VENDEDORES</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// "funciona al revés": the finished bearish drawing flips vertically.
+// "Lo mismo en sentido contrario": the finished bearish drawing flips vertically.
 const Mirror: React.FC<{t: number}> = ({t}) => {
-  const k = interpolate(t, [38.0, 39.7], [1, -1], {...clamp, easing: (x) => 0.5 - Math.cos(Math.PI * x) / 2});
-  const lbl = win(t, 37.9, 40.3, 0.25);
+  const k = interpolate(t, [23.9, 25.0], [1, -1], {...clamp, easing: (x) => 0.5 - Math.cos(Math.PI * x) / 2});
+  const lbl = win(t, 23.82, 25.1, 0.2);
   const lvl = BEAR[4][1];
   return (
     <>
@@ -308,37 +274,41 @@ const Mirror: React.FC<{t: number}> = ({t}) => {
           <path d={pathTo(BEAR, 8)} fill="none" stroke={C.white} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
         </g>
       </svg>
-      <div style={{position: 'absolute', left: 0, right: 0, top: 600, textAlign: 'center', opacity: lbl}}>
-        <span style={{fontFamily: DISPLAY, fontWeight: 800, fontSize: 56, color: C.gold, letterSpacing: '0.06em'}}>AL REVÉS ↕</span>
+      <div style={{position: 'absolute', left: 0, right: 0, top: CHIP_Y - 30, textAlign: 'center', opacity: lbl}}>
+        <span style={{fontFamily: DISPLAY, fontWeight: 800, fontSize: 52, color: C.gold, letterSpacing: '0.06em'}}>SENTIDO CONTRARIO ↕</span>
       </div>
     </>
   );
 };
 
+// "Esto es algo que nos define cómo operar un cambio de tendencia" + goodbye.
 const Close: React.FC<{t: number}> = ({t}) => {
-  const a = appear(t, 58.63, 0.35);
-  const b = appear(t, 60.3, 0.35);
-  const c = appear(t, 62.0, 0.35);
-  const bars = [0.25, 0.3, 0.22, 0.28, 1.0, 0.9, 0.75];
-  const outro = appear(t, 64.6, 0.4);
-  const card = (label: string, value: string, color: string, o: number) => (
-    <div style={{opacity: o, transform: `translateY(${(1 - o) * 20}px)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: `1.6px solid ${color}`, borderRadius: 18, padding: '20px 30px', marginBottom: 20}}>
-      <span style={{fontFamily: DISPLAY, fontWeight: 800, fontSize: 46, color}}>{label}</span>
-      <span style={{fontSize: 34, fontWeight: 600, color: C.text}}>{value}</span>
-    </div>
-  );
+  const steps = [
+    {label: 'QUIEBRE', color: C.red, at: 38.8},
+    {label: 'RETESTEO', color: C.gold, at: 39.5},
+    {label: 'VOLUMEN', color: C.green, at: 40.2},
+  ];
+  const big = appear(t, 40.9, 0.4);
+  const outro = appear(t, 43.4, 0.4);
   return (
-    <div style={{position: 'absolute', left: 60, width: 880, top: 600}}>
-      {card('RUPTURA', 'te avisa', C.red, a)}
-      {card('RETESTEO', 'te confirma', C.gold, b)}
-      <div style={{opacity: c, display: 'flex', alignItems: 'flex-end', gap: 14, height: 190, marginTop: 30}}>
-        {bars.map((h, i) => {
-          const g = interpolate(t, [62.2 + i * 0.15, 62.7 + i * 0.15], [0, 1], clamp);
-          return <div key={i} style={{flex: 1, height: `${h * 100 * g}%`, borderRadius: 6, background: i >= 4 ? C.green : C.gray}} />;
+    <div style={{position: 'absolute', left: 60, width: 880, top: 380}}>
+      <div style={{display: 'flex', alignItems: 'center', gap: 14}}>
+        {steps.map((st, i) => {
+          const o = appear(t, st.at, 0.3);
+          return (
+            <React.Fragment key={st.label}>
+              <div style={{opacity: o, transform: `translateY(${(1 - o) * 16}px)`, border: `2px solid ${st.color}`, color: st.color, borderRadius: 40, padding: '10px 22px', fontFamily: DISPLAY, fontWeight: 800, fontSize: 36}}>
+                {st.label}
+              </div>
+              {i < steps.length - 1 ? <span style={{opacity: o, color: C.muted, fontSize: 36}}>→</span> : null}
+            </React.Fragment>
+          );
         })}
-        <div style={{alignSelf: 'center', fontFamily: DISPLAY, fontWeight: 800, fontSize: 40, color: C.green, marginLeft: 10, width: 240}}>+ VOLUMEN</div>
       </div>
-      <div style={{opacity: outro, display: 'flex', alignItems: 'center', gap: 22, marginTop: 34}}>
+      <div style={{marginTop: 40, opacity: big, transform: `translateY(${(1 - big) * 20}px)`, fontFamily: DISPLAY, fontWeight: 800, fontSize: 76, lineHeight: 1.05}}>
+        = <span style={{color: C.gold}}>cambio de tendencia</span>
+      </div>
+      <div style={{opacity: outro, display: 'flex', alignItems: 'center', gap: 22, marginTop: 50}}>
         <div style={{display: 'flex', gap: 8, flex: 1}}>
           {new Array(10).fill(0).map((_, i) => (
             <div key={i} style={{flex: 1, height: 14, borderRadius: 7, background: i < 4 ? C.gold : C.line}} />
@@ -348,6 +318,9 @@ const Close: React.FC<{t: number}> = ({t}) => {
           4<span style={{color: C.muted}}>/10</span>
         </span>
       </div>
+      <div style={{opacity: outro, marginTop: 26}}>
+        <Kicker size={28}>Bull Army</Kicker>
+      </div>
     </div>
   );
 };
@@ -356,35 +329,34 @@ export const Reel04: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const t = frame / fps;
+  const sB = bearS(t);
+  const sU = bullS(t);
   return (
-    <ReelFrame num={4} title={TITLE}>
+    <SplitFrame num={4} title={TITLE} faceSrc={FACE}>
       <Audio src={staticFile('audio/reel-04.m4a')} />
-      <div style={{position: 'absolute', inset: 0, opacity: win(t, 0.4, 7.7, 0.3)}}>
-        <Intro t={t} />
+      <div style={{position: 'absolute', inset: 0, opacity: win(t, 0.6, 23.75, 0.25)}}>
+        <MsbScene t={t} pts={BEAR} s={sB} bullish={false} labels={BEAR_LABELS} />
+        <VolumeStrip t={t} pts={BEAR} s={sB} color={C.red} tagAt={18.23} tagTo={22.8} />
       </div>
-      <div style={{position: 'absolute', inset: 0, opacity: win(t, 7.95, 14.15, 0.25)}}>
-        <Definition t={t} />
-      </div>
-      <div style={{position: 'absolute', inset: 0, opacity: win(t, 14.3, 37.75, 0.25)}}>
-        <MsbScene t={t} pts={BEAR} s={bearS(t)} bullish={false} labels={BEAR_LABELS} />
-      </div>
-      <div style={{position: 'absolute', inset: 0, opacity: win(t, 37.85, 40.45, 0.15)}}>
+      <div style={{position: 'absolute', inset: 0, opacity: win(t, 23.85, 25.05, 0.12)}}>
         <Mirror t={t} />
       </div>
-      <div style={{position: 'absolute', inset: 0, opacity: win(t, 40.6, 58.45, 0.25)}}>
-        <MsbScene t={t} pts={BULL} s={bullS(t)} bullish labels={BULL_LABELS} />
+      <div style={{position: 'absolute', inset: 0, opacity: win(t, 25.1, 38.5, 0.2)}}>
+        <MsbScene t={t} pts={BULL} s={sU} bullish labels={BULL_LABELS} />
+        <VolumeStrip t={t} pts={BULL} s={sU} color={C.green} tagAt={34.5} tagTo={38.3} />
       </div>
-      <div style={{position: 'absolute', inset: 0, opacity: interpolate(t, [58.4, 58.7], [0, 1], clamp)}}>
+      <div style={{position: 'absolute', inset: 0, opacity: interpolate(t, [38.55, 38.85], [0, 1], clamp)}}>
         <Close t={t} />
       </div>
-      <Subtitles pages={pages} size={52} />
-    </ReelFrame>
+      <Subtitles pages={pages} {...SUBS} />
+    </SplitFrame>
   );
 };
 
-// Static cover: the bearish MSB fully drawn.
+// Static cover: the bearish MSB with its order block and retest.
 export const Reel04Cover: React.FC = () => (
-  <ReelFrame num={4} title={TITLE} still>
-    <MsbScene t={36} pts={BEAR} s={8} bullish={false} labels={{...BEAR_LABELS, confirmChip: undefined}} />
-  </ReelFrame>
+  <SplitFrame num={4} title={TITLE} faceSrc={FACE} faceTrimBefore={150} still>
+    <MsbScene t={16} pts={BEAR} s={8} bullish={false} labels={{...BEAR_LABELS, confirmChip: undefined, controlChip: undefined}} />
+    <VolumeStrip t={20} pts={BEAR} s={8} color={C.red} tagAt={19} tagTo={30} />
+  </SplitFrame>
 );
