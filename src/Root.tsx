@@ -8,6 +8,7 @@ import {REEL01_SECONDS, Reel01, Reel01Cover} from './reels/reel01/Reel01';
 import {REEL02_SECONDS, Reel02, Reel02Cover} from './reels/reel02/Reel02';
 import {REEL03_SECONDS, Reel03, Reel03Cover} from './reels/reel03/Reel03';
 import {REEL04_SECONDS, Reel04, Reel04Cover} from './reels/reel04/Reel04';
+import {REEL05_SECONDS, Reel05} from './reels/reel05/Reel05';
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -33,6 +34,7 @@ export const RemotionRoot: React.FC = () => (
       <Composition id="Reel03-portada" component={Reel03Cover} durationInFrames={1} fps={FPS} width={REEL_W} height={REEL_H} />
       <Composition id="Reel04" component={Reel04} durationInFrames={Math.round(REEL04_SECONDS * FPS)} fps={FPS} width={REEL_W} height={REEL_H} />
       <Composition id="Reel04-portada" component={Reel04Cover} durationInFrames={1} fps={FPS} width={REEL_W} height={REEL_H} />
+      <Composition id="Reel05" component={Reel05} durationInFrames={Math.round(REEL05_SECONDS * FPS)} fps={FPS} width={REEL_W} height={REEL_H} />
     </Folder>
   </>
 );
