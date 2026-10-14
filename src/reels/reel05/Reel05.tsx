@@ -17,11 +17,11 @@ const CANDLES: {k: K; at: number}[] = [
   {k: [50, 53, 49, 52], at: 2.7},
   {k: [52, 54, 50, 51], at: 3.4},
   {k: [51, 58, 50, 57], at: 6.0}, // base candle: its high is the gap's top
-  {k: [57, 74, 56, 72], at: 12.0}, // market order: big body, aggressive
-  {k: [72, 76, 63, 65], at: 13.5}, // third candle: its low is the gap's bottom (63)
-  {k: [65, 66, 60.5, 62], at: 30.0}, // pullback that touches the 50% line
-  {k: [62, 68, 60, 67], at: 33.0}, // rebound
-  {k: [67, 80, 66, 79], at: 35.5}, // continuation
+  {k: [57, 84, 56, 82], at: 12.0}, // market order: big body, aggressive
+  {k: [82, 86, 70, 72], at: 13.5}, // third candle: its low is the gap's bottom (70)
+  {k: [72, 74, 63.5, 66], at: 30.0}, // pullback that touches the 50% line (64)
+  {k: [66, 90, 65, 89], at: 33.0}, // rebound
+  {k: [89, 108, 88, 106], at: 35.5}, // continuation
 ];
 const VOLS = [0.25, 0.25, 0.3, 0.3, 0.25, 0.3, 1, 0.8, 0.6, 0.7, 0.9];
 
@@ -30,14 +30,14 @@ const win = (t: number, a: number, b: number, f = 0.3) =>
   interpolate(t, [a - f, a, b, b + f], [0, 1, 1, 0], clamp);
 const fade = (t: number, a: number, d = 0.35) => interpolate(t, [a, a + d], [0, 1], clamp);
 
-const X0 = 110;
-const STEP = 64;
-const BW = 36;
+const X0 = 100;
+const STEP = 84;
+const BW = 62;
 const cx = (i: number) => X0 + i * STEP;
-const py = (p: number) => 1220 - (p - 40) * 12.8;
-const GAP_TOP = py(63);
+const py = (p: number) => 1240 - (p - 40) * 11;
+const GAP_TOP = py(70);
 const GAP_BOT = py(58);
-const MID = py(60.5);
+const MID = py(64);
 
 const Candle: React.FC<{i: number; k: K; o: number}> = ({i, k, o}) => {
   const [op, hi, lo, cl] = k;
@@ -47,7 +47,7 @@ const Candle: React.FC<{i: number; k: K; o: number}> = ({i, k, o}) => {
   const bot = py(Math.min(op, cl));
   return (
     <g opacity={o}>
-      <line x1={x} x2={x} y1={py(hi)} y2={py(lo)} stroke={col} strokeWidth={3} />
+      <line x1={x} x2={x} y1={py(hi)} y2={py(lo)} stroke={col} strokeWidth={4} />
       <rect x={x - BW / 2} y={top} width={BW} height={Math.max(4, bot - top)} fill={col} rx={3} />
     </g>
   );
@@ -83,8 +83,8 @@ const FvgChart: React.FC<{t: number}> = ({t}) => {
     <svg width={1080} height={1920} style={{position: 'absolute', left: 0, top: 0, opacity: chartO}}>
       {/* limit order: waits below the price, never touched */}
       <g opacity={limO}>
-        <line x1={90} x2={1010} y1={py(50)} y2={py(50)} stroke={C.gold} strokeWidth={2.5} strokeDasharray="10 8" />
-        <Pill x={300} y={py(50) + 38} text="ORDEN LÍMITE · ESPERA" o={1} color={C.gold} size={22} />
+        <line x1={80} x2={1010} y1={py(46)} y2={py(46)} stroke={C.gold} strokeWidth={3} strokeDasharray="10 8" />
+        <Pill x={260} y={py(46) + 40} text="ORDEN LÍMITE · ESPERA" o={1} color={C.gold} size={26} />
       </g>
       {/* fair value gap, between the first candle's high and the third candle's low */}
       <g opacity={gapO}>
@@ -92,16 +92,16 @@ const FvgChart: React.FC<{t: number}> = ({t}) => {
       </g>
       {/* 50% line of the gap */}
       <g opacity={midO}>
-        <line x1={cx(5) - BW / 2} x2={1010} y1={MID} y2={MID} stroke={C.white} strokeWidth={2} strokeDasharray="4 6" />
-        <Pill x={930} y={MID - 30} text="MITAD 50%" o={1} color={C.white} size={20} />
+        <line x1={cx(5) - BW / 2} x2={1010} y1={MID} y2={MID} stroke={C.white} strokeWidth={2.5} strokeDasharray="4 6" />
+        <Pill x={950} y={MID + 34} text="MITAD 50%" o={1} color={C.white} size={24} />
       </g>
       {CANDLES.map((c, i) => (
         <Candle key={i} i={i} k={c.k} o={fade(t, c.at, 0.25)} />
       ))}
       {/* order labels */}
-      <Pill x={cx(6)} y={py(76) - 40} text="ORDEN DE MERCADO · AGRESIVA" o={win(t, 12.4, 18.4, 0.3)} color={C.green} size={22} />
-      <Pill x={820} y={650} text="FVG · VALOR JUSTO" o={gapO} color={C.gold} size={24} />
-      <Pill x={cx(8) + 100} y={py(54)} text="RESPETA EL 50%" o={win(t, 33.6, 38.5, 0.3)} color={C.green} size={24} />
+      <Pill x={cx(6)} y={py(84) - 44} text="ORDEN DE MERCADO · AGRESIVA" o={win(t, 12.4, 18.4, 0.3)} color={C.green} size={26} />
+      <Pill x={760} y={500} text="FVG · VALOR JUSTO" o={gapO} color={C.gold} size={30} />
+      <Pill x={cx(8) + 110} y={py(54)} text="RESPETA EL 50%" o={win(t, 33.6, 38.5, 0.3)} color={C.green} size={28} />
       {/* volume panel */}
       <text x={60} y={1262} fontFamily={FONT} fontWeight={600} fontSize={18} fill={C.muted} letterSpacing="0.2em">
         VOLUMEN
@@ -111,9 +111,9 @@ const FvgChart: React.FC<{t: number}> = ({t}) => {
         const up = CANDLES[i].k[3] >= CANDLES[i].k[0];
         const h = v * 80 * o;
         const hot = i === 6;
-        return <rect key={i} x={cx(i) - 14} y={1330 - h} width={28} height={h} rx={3} fill={hot ? C.gold : up ? C.green : C.red} opacity={0.85} />;
+        return <rect key={i} x={cx(i) - 20} y={1330 - h} width={40} height={h} rx={4} fill={hot ? C.gold : up ? C.green : C.red} opacity={0.85} />;
       })}
-      <Pill x={cx(6)} y={1226} text="AGRESIVIDAD" o={win(t, 12.4, 18.4, 0.3)} color={C.gold} size={20} />
+      <Pill x={cx(6)} y={1222} text="AGRESIVIDAD" o={win(t, 12.4, 18.4, 0.3)} color={C.gold} size={24} />
     </svg>
   );
 };
