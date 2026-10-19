@@ -165,11 +165,11 @@ Trabajar en **tiempo (ms), no en barras** → funciona en cualquier TF y activo 
 
 ---
 
-## 10. Decisiones pendientes (a confirmar con el usuario)
+## 10. Decisiones tomadas
 
-1. ¿Anclas **manuales** (dos fechas) o también **auto-detección**? (Recomendado: híbrido, manual por defecto.)
-2. Alcance v1: motor + ventanas + validación + VTL + momentum. ¿Ratios y estadística de pivote en v1 o v2?
-3. ¿Indicador (solo visual + alertas) o también **strategy** para backtest real?
-4. Idioma de etiquetas/inputs (¿español o inglés?).
-5. Activos/TF principales donde se usará, para calibrar presets.
-6. Ubicación del `.pine` en el repo (propuesta: `guias/time-cycles-indicator/time_cycles.pine`).
+1. **Anclas:** auto-detección de mínimos siguiendo las reglas del PDF (prominencia, punto medio en mínimos dobles, par + subdivisión con mejor tasa de acierto). Modo manual disponible como alternativa.
+2. **Alcance v1:** completo. Incluye motor, ventanas, validación, fantasma, ajuste de fase, Hurst, VTL, señales, estadística de pivotes, momentum, ratio, sincronía y alertas.
+3. **Tipo:** indicador visual + alertas. La `strategy` para backtest queda para la v2.
+4. **Idioma:** español por defecto y cambiable a inglés en los ajustes. Los títulos de los inputs van bilingües porque Pine no permite cambiarlos dinámicamente.
+5. **Temporalidades:** 5m, 30m, 1h, 4h, 6h, 1D, 3D, 1W, 1M, 2M. El motor trabaja en tiempo o en barras según el activo y avisa cuando el ciclo es < 5D.
+6. **Archivo:** `guias/time-cycles-indicator/time_cycles.pine`. Uso documentado en `README.md`.
