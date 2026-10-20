@@ -907,7 +907,7 @@ if barstate.islast
 
         // ─── Marcas de acierto
         if iMarks != "Ninguno / None"
-            int nm = 0
+            int nMarks = 0
             for i = 0 to 3
                 Lq = LV.get(i)
                 if Lq.on and (iMarks == "Todos / All" or i == tI) and Lq.px.size() > 0
@@ -915,7 +915,7 @@ if barstate.islast
                         pq = Lq.px.get(q)
                         sq = Lq.st.get(q)
                         tq = Lq.tro.get(q)
-                        if pq >= xA and sq >= 0 and tq >= 0 and nm < 250
+                        if pq >= xA and sq >= 0 and tq >= 0 and nMarks < 250
                             dev = lenDays(S, xOf(S, tq) - pq)
                             stTxt = sq == 1 ? txt("válido", "valid") : sq == 2 ? txt("continuación", "continuation") : sq == 3 ? txt("límite ±15%", "limit ±15%") : txt("inválido", "invalid")
                             tipM = lvName(i) + " · " + stTxt + "\n" + txt("ideal: ", "ideal: ") + fmtT(timeOf(S, pq)) + "\n" + txt("real: ", "actual: ") + fmtT(S.t.get(tq)) + "\n" + txt("desvío: ", "deviation: ") + (dev >= 0 ? "+" : "") + fmtDays(dev)
@@ -924,7 +924,7 @@ if barstate.islast
                             else
                                 mc = sq == 1 ? cOk : sq == 2 ? #42A5F5 : cWarn
                                 label.new(S.t.get(tq), na, "", xloc = xloc.bar_time, yloc = yloc.belowbar, style = label.style_circle, color = color.new(mc, 0), size = size.tiny, tooltip = tipM)
-                            nm += 1
+                            nMarks += 1
 
         // ─── Pivote fantasma (2 invalidaciones seguidas) y ciclos desplazados
         string redrawTxt = ""
@@ -1298,8 +1298,8 @@ if barstate.islast
                 Lq = LV.get(i)
                 r = 3 + i
                 dd = lenDays(S, Lq.len)
-                nm = (i == tI ? "★ " : "") + lvName(i) + (i == dom ? " ◆" : "")
-                tCell(tb, 0, r, nm, cols.get(i), tBg)
+                lvTxt = (i == tI ? "★ " : "") + lvName(i) + (i == dom ? " ◆" : "")
+                tCell(tb, 0, r, lvTxt, cols.get(i), tBg)
                 tCell(tb, 1, r, fmtDays(dd) + " · " + str.tostring(lenBars(S, Lq.len), "#") + "b", fg, tBg)
                 tCell(tb, 2, r, hurstName(dd), fg, tBg)
                 tCell(tb, 3, r, i == 0 ? "—" : str.tostring(Lq.ratio), fg, tBg)
