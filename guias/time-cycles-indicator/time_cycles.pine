@@ -28,8 +28,8 @@ iProj    = input.float(1.0, "Proyección (ciclos madre) / Projection (master cyc
 // ───────────────────────────── 2 · Anclas ─────────────────────────────
 G2 = "2 · Anclas / Anchors"
 iAnchor  = input.string("Auto", "Modo de anclas / Anchor mode", options = ["Auto", "Manual"], group = G2, tooltip = "ES: Auto detecta los mínimos mayores por prominencia y elige el par + subdivisión con mejor tasa de acierto. Manual usa las dos fechas de abajo.\nEN: Auto detects major lows by prominence and picks the pair + subdivision with the best hit rate. Manual uses the two dates below.")
-iT1      = input.time(timestamp(2018, 12, 15, 0, 0), "Ancla manual 1 / Manual anchor 1", group = G2)
-iT2      = input.time(timestamp(2022, 11, 21, 0, 0), "Ancla manual 2 / Manual anchor 2", group = G2)
+iT1      = input.time(timestamp("15 Dec 2018 00:00 +0000"), "Ancla manual 1 / Manual anchor 1", group = G2)
+iT2      = input.time(timestamp("21 Nov 2022 00:00 +0000"), "Ancla manual 2 / Manual anchor 2", group = G2)
 iPivStr  = input.int(0, "Fuerza de pivote (0 = auto) / Pivot strength (0 = auto)", minval = 0, maxval = 500, group = G2, tooltip = "ES: barras a cada lado para considerar un mínimo. 0 = automático según la historia.\nEN: bars on each side to qualify a low. 0 = automatic from history length.")
 iCand    = input.int(8, "Mínimos candidatos / Candidate lows", minval = 3, maxval = 12, group = G2)
 iMerge   = input.bool(true, "Fusionar mínimos dobles (punto medio) / Merge double bottoms (midpoint)", group = G2)
