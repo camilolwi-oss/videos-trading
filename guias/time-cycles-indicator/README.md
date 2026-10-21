@@ -15,6 +15,30 @@ El resumen de la guía y las decisiones de diseño están en [`ANALISIS-PDF-Y-DI
 
 > Limitación de Pine Script: los títulos de los *inputs* son texto fijo y no pueden cambiar según otro ajuste. Por eso cada ajuste está rotulado en los dos idiomas (`Ventana válida ±% / Valid window ±%`).
 
+## Modo de lectura
+
+`1 · General → Modo de lectura / Reading mode`. El gráfico responde tres preguntas: **cuándo** (próxima ventana), **cuánto confío** (aciertos del ritmo) y **qué hago**.
+
+| | **Simple** (por defecto) | **Completo** |
+|---|---|---|
+| Arcos | Solo el ciclo de trading ★ (grueso) y su ciclo padre (fino) | Los 4 niveles activados |
+| Tiempo | Una sola franja en el próximo pivote: **gris** falta tiempo · **ámbar** en ventana · **verde** zona ideal (±5 %) | Diana ±15/10/5 %, franja por nivel y líneas punteadas de cada pivote |
+| Aciertos | Solo las ✗ (fallos) del ciclo de trading; el total va en el panel | ● válido / continuación / límite y ✗ según el ajuste *Marcas* |
+| Señales | Solo la última ▲/▼ con entrada, SL y TP 1:1 | Historial + TP 1:1, 1.618, 2.272 |
+| Estadística | TP1 y TP2 desde la base del ciclo actual | + TP3, zona temporal del techo y retroceso típico |
+| Hurst | Solo los ciclos con ventana **activa** | Todos los proyectados desde el mínimo extremo |
+| Oculto | "Entra/sale dinero", arcos desplazados, marca del ratio | Todo visible |
+| Panel | 6 filas: estado · qué hacer · próximo pivote · confianza · momentum · última señal | Tabla detallada (18 filas) |
+
+### Nombres y colores
+
+- Los ciclos se nombran por **duración** ("80D", "4.5h") en gráfico, panel y alertas. La tabla completa añade el nivel interno entre paréntesis ("80D (N2)").
+- Los arcos usan **un solo tono neutro** (grosor distinto por nivel). El color queda reservado para el **estado**: verde = válido / zona ideal, ámbar = atención / en ventana, rojo = fallo, violeta = Hurst. Si prefiere los colores por nivel de la guía (dorado, marrón, gris), active `10 · Visual → Colores por nivel`.
+
+### La fila "Qué hacer"
+
+Se calcula en este orden: ritmo roto (2 fallos seguidos) → señal activa (reciente y sin tocar el SL) → zona ideal → en ventana → saliendo del pivote (con o sin momentum) → fase de salida de dinero (segunda mitad del ciclo) → esperar N días. Es una guía de lectura, no una orden: la guía pide confirmar siempre con estructura y precio.
+
 ---
 
 ## Qué hace el motor (y qué regla de la guía aplica)
@@ -40,12 +64,13 @@ El resumen de la guía y las decisiones de diseño están en [`ANALISIS-PDF-Y-DI
 
 | Elemento | Significado |
 |---|---|
-| Arcos gris / dorado / marrón / gris claro | Madre, N1, N2, N3 (los colores de la guía). |
-| Líneas punteadas verticales | Pivotes ideales (más marcadas en el nivel de trading ★). |
-| Etiqueta `N2 22/08/2026` | Próximo pivote de cada grado (tooltip = ventana). |
-| Franja al pie del arco | Ventana ±% del próximo pivote; más intensa si está **activa**. |
-| Diana (3 bandas verticales) | Ventanas ±15 / ±10 / ±5 % del próximo pivote del nivel de trading. |
-| ● verde / azul / naranja | Pivote válido / continuación / límite ±15 % (tooltip con desvío en días). |
+| Arcos (neutros; grueso = ciclo de trading ★, fino = padre) | Los ciclos. En Completo se ven los 4 niveles; con *Colores por nivel* toman los colores de la guía. |
+| Franja vertical gris / ámbar / verde | Próximo pivote del ciclo de trading: falta tiempo / en ventana / zona ideal. La línea punteada central es la fecha ideal. |
+| Etiqueta `80D · 22/08/26 · faltan 9D` | Próximo pivote del ciclo de trading con su estado (tooltip = ventana completa). |
+| Líneas punteadas verticales (Completo) | Pivotes ideales de cada nivel. |
+| Franja al pie del arco (Completo) | Ventana ±% del próximo pivote de cada nivel. |
+| Diana (Completo) | Ventanas ±15 / ±10 / ±5 % del próximo pivote del nivel de trading. |
+| ● verde / azul / naranja (Completo) | Pivote válido / continuación / límite ±15 % (tooltip con desvío en días). |
 | ✗ rojo | Pivote inválido. |
 | Línea violeta discontinua "Fantasma" | Pivote propuesto tras 2 fallos seguidos. |
 | Arcos punteados | Ciclos N2/N3 desplazados por el desfase del nivel superior. |
@@ -59,24 +84,37 @@ El resumen de la guía y las decisiones de diseño están en [`ANALISIS-PDF-Y-DI
 | Línea azul "Retroceso típico" | Retroceso medio tras el techo (en la guía ≈ 0.382). |
 | Marca violeta `R N2` abajo | Próximo pivote del ratio. |
 
-### Tabla
+### Panel (modo Simple)
 
+| Fila | Contenido |
+|---|---|
+| Cabecera | Activo · ciclo de trading ★ · semáforo: 🟢 ritmo válido (≥ objetivo) · 🟡 aceptable o pocas pruebas · 🔴 débil o roto |
+| Qué hacer | La lectura operativa del momento (ver arriba) |
+| Próximo pivote | Fecha ± ventana · estado · sincronía con otros ciclos si la hay |
+| Confianza | Aciertos x/y (%) frente al objetivo · TP1/TP2 estadísticos si hay datos |
+| Momentum | x/5 con cada punto del checklist |
+| Última señal | Dirección, fecha, entrada, SL y si sigue viva o está cerrada |
+| ⚠ | Solo aparece si hay avisos (ciclo < 5D, pocas pruebas, redibujar) |
+
+### Tabla (modo Completo)
+
+- Cabecera con semáforo y fila "Qué hacer" (las mismas del panel Simple).
 - Anclas usadas y subdivisión elegida.
-- Por grado:
-  - longitud en días y barras;
+- Por ciclo:
+  - duración y nivel interno, barras;
   - ciclo de Hurst equivalente (≈80D, ≈20W…);
   - aciertos x/y y %;
   - próximo pivote ± ventana;
   - estado (`EN VENTANA`, `faltan Nd`, `⚠ redibujar`).
-- ★ nivel de trading · ◆ dominante · calidad: válido ≥ objetivo (80 %), aceptable ≥ 60 %, débil (la guía: "no forzar, cambiar de activo/TF").
-- Sincronía actual, Hurst, momentum x/5 con cada punto, ratio y traslación (techo temprano/simétrico/tardío).
+- ★ ciclo de trading · ◆ dominante · sincronía actual.
+- Hurst, momentum x/5 con cada punto, ratio y traslación (techo temprano/simétrico/tardío).
 - Estadística de pivotes, ciclo actual (expansión y fuerza), última señal y avisos.
 
 ---
 
 ## Alertas
 
-Para crear la alerta: botón *Crear alerta* → condición **Ciclos de Tiempo** → **"Cualquier llamada a la función alert()"**. Los mensajes llegan en el idioma elegido. Cada tipo se activa o desactiva en `11 · Alertas`.
+Para crear la alerta: botón *Crear alerta* → condición **Ciclos de Tiempo** → **"Cualquier llamada a la función alert()"**. Los mensajes llegan en el idioma elegido y nombran el ciclo por su duración (`BTCUSD · ciclo 80D · Entra en la ventana de pivote (15/08/26 → 29/08/26)`). Cada tipo se activa o desactiva en `11 · Alertas`.
 
 También hay condiciones individuales (con texto fijo bilingüe), por si se quiere una alerta por evento:
 
