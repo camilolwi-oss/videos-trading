@@ -1,0 +1,498 @@
+//@version=6
+indicator("Ciclo de Volatilidad · Volatility Cycle", shorttitle = "VolCycle", overlay = false, max_lines_count = 100, max_labels_count = 200, max_boxes_count = 200, max_polylines_count = 10)
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Ciclo de Volatilidad · Volatility Cycle
+//  Versión propia y documentada del oscilador "volamonk" analizado a partir de
+//  capturas (ver guias/volatilidad-hurst/ANALISIS-Y-BACKTEST.md):
+//   · Línea irregular = percentil de la volatilidad (ATR) de 0 a 100.
+//   · Línea de ciclo  = percentil de ATR largo suavizado (preset compatible:
+//     SMA 90 del percentil de ATR 28, que reproduce la captura de 4h con r = 0,91).
+//   · Bandas = compresión (percentil en el suelo). Violeta = comprimiendo,
+//     azul = comprimido pero el ATR ya sube (se empieza a soltar).
+//   · Exponente de Hurst (R/S): persistencia del precio (≠ ciclos de J.M. Hurst).
+//   · Backtest integrado: rango futuro tras cada evento y regla de ruptura.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ───────────────────────────── 1 · General ─────────────────────────────
+G1 = "1 · General"
+iLang    = input.string("Español", "Idioma / Language", options = ["Español", "English"], group = G1)
+iPreset  = input.string("Compatible", "Línea de ciclo / Cycle line", options = ["Compatible", "Rápida / Fast"], group = G1, tooltip = "ES: Compatible = SMA del percentil de ATR largo (como el original, con más retraso). Rápida = SuperSmoother de Ehlers con la misma longitud (menos retraso).\nEN: Compatible = SMA of the long-ATR percentile (like the original, more lag). Fast = Ehlers SuperSmoother with the same length (less lag).")
+
+// ───────────────────────────── 2 · Volatilidad ─────────────────────────────
+G2 = "2 · Volatilidad / Volatility"
+iAtrLen  = input.int(14, "ATR de la línea irregular / Fast-line ATR", minval = 2, group = G2)
+iRankLen = input.int(100, "Ventana del percentil / Percentile window", minval = 20, maxval = 1000, group = G2)
+iSmooth  = input.int(1, "Suavizado de la irregular (SMA) / Fast-line smoothing (SMA)", minval = 1, maxval = 20, group = G2)
+iCompThr = input.float(5.0, "Umbral de compresión / Compression threshold", minval = 0.0, maxval = 30.0, group = G2, tooltip = "ES: percentil ≤ umbral = compresión (bandas).\nEN: percentile ≤ threshold = compression (bands).")
+iRelThr  = input.float(20.0, "Umbral de liberación / Release threshold", minval = 5.0, maxval = 60.0, group = G2, tooltip = "ES: tras una compresión, cruzar este nivel = liberación.\nEN: after a compression, crossing this level = release.")
+iPeakThr = input.float(90.0, "Umbral de agotamiento / Exhaustion threshold", minval = 60.0, maxval = 100.0, group = G2)
+
+// ───────────────────────────── 3 · Ciclo ─────────────────────────────
+G3 = "3 · Ciclo / Cycle"
+iCycAtr  = input.int(28, "ATR del ciclo / Cycle ATR", minval = 2, group = G3)
+iCycLen  = input.int(90, "Longitud del ciclo / Cycle length", minval = 5, maxval = 500, group = G3)
+iProj    = input.bool(true, "Proyectar el ciclo dominante / Project the dominant cycle", group = G3, tooltip = "ES: detecta el período dominante de la línea de ciclo (autocorrelación), ajusta una senoide y la proyecta hacia adelante. Es una estimación, no una predicción.\nEN: detects the dominant period of the cycle line (autocorrelation), fits a sine and projects it forward. An estimate, not a prediction.")
+iProjWin = input.int(400, "Ventana para detectar el período / Window to detect the period", minval = 100, maxval = 2000, group = G3)
+
+// ───────────────────────────── 4 · Hurst ─────────────────────────────
+G4 = "4 · Exponente de Hurst / Hurst exponent"
+iHurst   = input.bool(true, "Calcular / Compute", group = G4, tooltip = "ES: H > 0,55 persistente (tendencias), H < 0,45 reversión a la media (rangos), ~0,5 aleatorio. Es el exponente de H.E. Hurst, distinto de los ciclos de J.M. Hurst.\nEN: H > 0.55 persistent (trends), H < 0.45 mean-reverting (ranges), ~0.5 random. This is H.E. Hurst's exponent, not J.M. Hurst's cycles.")
+iHLen    = input.int(100, "Ventana R/S / R/S window", minval = 32, maxval = 500, group = G4)
+iHAvg    = input.int(10, "Media del Hurst / Hurst average", minval = 1, maxval = 50, group = G4)
+iHBars   = input.int(500, "Barras calculadas / Bars computed", minval = 50, maxval = 5000, group = G4)
+
+// ───────────────────────────── 5 · Señales y backtest ─────────────────────────────
+G5 = "5 · Señales y backtest / Signals & backtest"
+iBox     = input.bool(true, "Caja de compresión en el precio / Compression box on price", group = G5)
+iBrk     = input.bool(true, "Rupturas en el precio / Breakouts on price", group = G5)
+iCross   = input.bool(false, "Marcar cruces irregular/ciclo / Mark fast/cycle crosses", group = G5, tooltip = "ES: son frecuentes; en el backtest de las capturas coincidían con giros en buena parte por azar.\nEN: frequent; in the screenshot backtest they matched turns largely by chance.")
+iH       = input.int(12, "Horizonte del backtest (barras) / Backtest horizon (bars)", minval = 2, maxval = 200, group = G5)
+iTable   = input.bool(true, "Mostrar tabla / Show table", group = G5)
+iTblPos  = input.string("Arriba derecha / Top right", "Posición tabla / Table position", options = ["Arriba derecha / Top right", "Abajo derecha / Bottom right", "Arriba izquierda / Top left", "Abajo izquierda / Bottom left"], group = G5)
+
+// ───────────────────────────── 6 · Alertas ─────────────────────────────
+G6 = "6 · Alertas / Alerts"
+iAComp   = input.bool(true, "Inicio de compresión / Compression start", group = G6)
+iARel    = input.bool(true, "Liberación / Release", group = G6)
+iABrk    = input.bool(true, "Ruptura de la caja / Box breakout", group = G6)
+iAPeak   = input.bool(true, "Agotamiento / Exhaustion", group = G6)
+iACyc    = input.bool(true, "Ciclo cruza 50 / Cycle crosses 50", group = G6)
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Utilidades
+// ════════════════════════════════════════════════════════════════════════════
+ES = iLang == "Español"
+txt(string es, string en) => ES ? es : en
+
+fmtT(int t) => str.format_time(t, timeframe.isintraday ? "dd/MM HH:mm" : "dd/MM/yy", syminfo.timezone)
+
+fmtDays(float d) => d >= 1.0 ? str.tostring(d, "#.#") + "D" : str.tostring(d * 24.0, "#.#") + "h"
+
+// SuperSmoother de 2 polos (Ehlers): suavizado con poco retraso.
+superSmoother(float src, int len) =>
+    a1 = math.exp(-1.414 * math.pi / len)
+    b1 = 2.0 * a1 * math.cos(1.414 * math.pi / len)
+    c2 = b1
+    c3 = -a1 * a1
+    c1 = 1.0 - c2 - c3
+    float ss = na
+    ss := c1 * (src + nz(src[1], src)) / 2.0 + c2 * nz(ss[1], src) + c3 * nz(ss[2], src)
+    ss
+
+// Exponente de Hurst por rango reescalado (R/S) sobre una ventana de retornos.
+hurstRS(array<float> x) =>
+    n = x.size()
+    lx = array.new<float>()
+    ly = array.new<float>()
+    int s = 8
+    while s <= n / 2
+        float acc = 0.0
+        int cnt = 0
+        int i0 = 0
+        while i0 + s <= n
+            float m = 0.0
+            for j = i0 to i0 + s - 1
+                m += x.get(j)
+            m := m / s
+            float cum = 0.0
+            float mxC = -1e18
+            float mnC = 1e18
+            float ss2 = 0.0
+            for j = i0 to i0 + s - 1
+                dv = x.get(j) - m
+                cum += dv
+                mxC := math.max(mxC, cum)
+                mnC := math.min(mnC, cum)
+                ss2 += dv * dv
+            sd = math.sqrt(ss2 / s)
+            if sd > 0
+                acc += (mxC - mnC) / sd
+                cnt += 1
+            i0 += s
+        if cnt > 0
+            lx.push(math.log(s))
+            ly.push(math.log(acc / cnt))
+        s *= 2
+    float h = na
+    k = lx.size()
+    if k >= 2
+        ax = lx.avg()
+        ay = ly.avg()
+        float num = 0.0
+        float den = 0.0
+        for j = 0 to k - 1
+            num += (lx.get(j) - ax) * (ly.get(j) - ay)
+            den += (lx.get(j) - ax) * (lx.get(j) - ax)
+        h := den > 0 ? num / den : na
+    h
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Cálculo por barra
+// ════════════════════════════════════════════════════════════════════════════
+// Línea irregular: percentil (0–100) del ATR actual dentro de la ventana.
+atrF   = ta.atr(iAtrLen)
+volRaw = ta.percentrank(atrF, iRankLen)
+volSm  = ta.sma(volRaw, iSmooth)
+vol    = iSmooth > 1 ? volSm : volRaw
+
+// Línea de ciclo: percentil de un ATR más largo, suavizado.
+atrC    = ta.atr(iCycAtr)
+cycBase = ta.percentrank(atrC, iRankLen)
+cycSma  = ta.sma(cycBase, iCycLen)
+cycSS   = superSmoother(nz(cycBase, 50.0), iCycLen)
+cyc     = iPreset == "Compatible" ? cycSma : (na(cycBase) ? na : cycSS)
+
+// Estados.
+comp       = vol <= iCompThr
+compRising = comp and atrF > atrF[1]
+var int compLen = 0
+compLen := comp ? compLen + 1 : 0
+
+// Zona de compresión: desde el primer toque del suelo hasta la liberación.
+var bool  inZone = false
+var float zH     = na
+var float zL     = na
+var int   zStart = na
+var float armH   = na
+var float armL   = na
+var int   armBar = na
+var int   lastBrkBar = na
+var int   lastBrkDir = 0
+var float lastBrkStop = na
+bool evCompStart = false
+bool evRelease   = false
+bool evLong      = false
+bool evShort     = false
+
+if not inZone and comp
+    inZone := true
+    evCompStart := true
+    zH := high
+    zL := low
+    zStart := bar_index
+else if inZone
+    zH := math.max(zH, high)
+    zL := math.min(zL, low)
+
+xRel = ta.crossover(vol, iRelThr)
+if inZone and xRel
+    evRelease := true
+    inZone := false
+    armH := zH
+    armL := zL
+    armBar := bar_index
+    if iBox
+        box.new(zStart, zH, bar_index, zL, border_color = color.new(#9C6ADE, 30), bgcolor = color.new(#9C6ADE, 88), force_overlay = true)
+
+// Ruptura: primer cierre fuera de la caja dentro del horizonte.
+if not na(armBar)
+    if bar_index - armBar > iH
+        armBar := na
+    else if close > armH
+        evLong := true
+        lastBrkBar := bar_index
+        lastBrkDir := 1
+        lastBrkStop := armL
+        armBar := na
+    else if close < armL
+        evShort := true
+        lastBrkBar := bar_index
+        lastBrkDir := -1
+        lastBrkStop := armH
+        armBar := na
+
+evPeak   = ta.crossover(vol, iPeakThr)
+evCycUp  = ta.crossover(cyc, 50)
+evCycDn  = ta.crossunder(cyc, 50)
+evExpand = ta.crossover(vol, cyc)
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Backtest integrado (todo el historial del gráfico)
+// ════════════════════════════════════════════════════════════════════════════
+// Rango futuro de cada barra = (máx − mín de las H barras siguientes) / cierre.
+var array<float> frAll = array.new<float>()
+var array<float> frRel = array.new<float>()
+var array<float> frExp = array.new<float>()
+var array<float> frPk  = array.new<float>()
+hiH = ta.highest(high, iH)
+loH = ta.lowest(low, iH)
+if bar_index > iH
+    fr = (hiH - loH) / close[iH]
+    frAll.push(fr)
+    if frAll.size() > 90000
+        frAll.shift()
+    if evRelease[iH]
+        frRel.push(fr)
+    if evExpand[iH]
+        frExp.push(fr)
+    if evPeak[iH]
+        frPk.push(fr)
+
+// Regla de ruptura: entrada al cierre, stop al otro lado de la caja, objetivos 1R y 2R, salida por tiempo.
+var array<float> res1 = array.new<float>()
+var array<float> res2 = array.new<float>()
+var float tEntry = na
+var float tStop  = na
+var int   tDir   = 0
+var int   tBar   = na
+var float tR1    = na
+var float tR2    = na
+if not na(tBar) and bar_index > tBar
+    risk = math.abs(tEntry - tStop)
+    hitStop = tDir > 0 ? low <= tStop : high >= tStop
+    if na(tR1)
+        hitT1 = tDir > 0 ? high >= tEntry + risk : low <= tEntry - risk
+        tR1 := hitStop ? -1.0 : hitT1 ? 1.0 : na
+    if na(tR2)
+        hitT2 = tDir > 0 ? high >= tEntry + 2 * risk : low <= tEntry - 2 * risk
+        tR2 := hitStop ? -1.0 : hitT2 ? 2.0 : na
+    if bar_index - tBar >= iH
+        tR1 := na(tR1) ? tDir * (close - tEntry) / risk : tR1
+        tR2 := na(tR2) ? tDir * (close - tEntry) / risk : tR2
+    if not na(tR1) and not na(tR2)
+        res1.push(tR1)
+        res2.push(tR2)
+        tBar := na
+if (evLong or evShort) and na(tBar)
+    tEntry := close
+    tStop := evLong ? armL : armH
+    tDir := evLong ? 1 : -1
+    tBar := bar_index
+    tR1 := na
+    tR2 := na
+    if math.abs(tEntry - tStop) <= 0
+        tBar := na
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Exponente de Hurst (solo en las últimas barras: es costoso)
+// ════════════════════════════════════════════════════════════════════════════
+var array<float> lrets = array.new<float>()
+var array<float> hHist = array.new<float>()
+lrets.push(close > 0 and close[1] > 0 ? math.log(close / close[1]) : 0.0)
+if lrets.size() > iHLen
+    lrets.shift()
+float hNow = na
+if iHurst and bar_index >= last_bar_index - iHBars and lrets.size() == iHLen
+    hNow := hurstRS(lrets)
+    hHist.push(hNow)
+    if hHist.size() > iHAvg
+        hHist.shift()
+hAvg = hHist.size() > 0 ? hHist.avg() : na
+
+// Historial de la línea de ciclo para detectar su período dominante.
+var array<float> cycHist = array.new<float>()
+if not na(cyc)
+    cycHist.push(cyc)
+    if cycHist.size() > iProjWin
+        cycHist.shift()
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Gráfico
+// ════════════════════════════════════════════════════════════════════════════
+volCol = vol >= iPeakThr ? #9C6ADE : vol >= 70 ? #26C6DA : vol <= iCompThr ? color.new(chart.fg_color, 50) : color.new(chart.fg_color, 25)
+plot(vol, "Percentil de volatilidad / Volatility percentile", color = volCol, linewidth = 1)
+plot(cyc, "Ciclo de volatilidad / Volatility cycle", color = color.new(#B0B0B0, 0), linewidth = 2)
+hline(50, "50", color = color.new(#F7931A, 20), linestyle = hline.style_dotted)
+hline(iCompThr, "Compresión / Compression", color = color.new(#9C6ADE, 70), linestyle = hline.style_dotted)
+hline(iPeakThr, "Agotamiento / Exhaustion", color = color.new(#9C6ADE, 70), linestyle = hline.style_dotted)
+bgcolor(comp ? (compRising ? color.new(#2E86C1, 55) : color.new(#7D3C98, 55)) : na, title = "Compresión / Compression")
+
+plotshape(evRelease, "Liberación / Release", shape.triangleup, location.bottom, color = #2E86C1, size = size.tiny)
+plotshape(evPeak, "Agotamiento / Exhaustion", shape.diamond, location.top, color = #9C6ADE, size = size.tiny)
+plotshape(evCycUp ? 50.0 : na, "Ciclo cruza 50 ↑ / Cycle crosses 50 ↑", shape.circle, location.absolute, color = color.new(#F7931A, 0), size = size.tiny)
+plotshape(evCycDn ? 50.0 : na, "Ciclo cruza 50 ↓ / Cycle crosses 50 ↓", shape.xcross, location.absolute, color = color.new(#F7931A, 0), size = size.tiny)
+plotshape(iCross and evExpand ? vol : na, "Irregular cruza el ciclo ↑ / Fast crosses cycle ↑", shape.circle, location.absolute, color = color.new(#26C6DA, 30), size = size.auto)
+plotshape(iBrk and evLong, "Ruptura alcista / Bullish breakout", shape.triangleup, location.belowbar, color = #26A69A, size = size.small, force_overlay = true)
+plotshape(iBrk and evShort, "Ruptura bajista / Bearish breakout", shape.triangledown, location.abovebar, color = #EF5350, size = size.small, force_overlay = true)
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Última barra: proyección del ciclo, tabla y alertas
+// ════════════════════════════════════════════════════════════════════════════
+tblPos = iTblPos == "Arriba derecha / Top right" ? position.top_right : iTblPos == "Abajo derecha / Bottom right" ? position.bottom_right : iTblPos == "Arriba izquierda / Top left" ? position.top_left : position.bottom_left
+var table tb = na
+
+pctAbove(array<float> a, float med) =>
+    int c = 0
+    if a.size() > 0
+        for j = 0 to a.size() - 1
+            c += a.get(j) > med ? 1 : 0
+    a.size() > 0 ? c * 100.0 / a.size() : na
+
+statTxt(string name, array<float> a, float med) =>
+    a.size() == 0 ? name + " 0" : name + " " + str.tostring(a.size()) + " · " + str.tostring(pctAbove(a, med), "#") + "% > " + txt("mediana", "median") + " (×" + str.tostring(a.median() / med, "#.##") + ")"
+
+if barstate.islast
+    // borrar la proyección anterior
+    aPl = polyline.all
+    if aPl.size() > 0
+        for i = 0 to aPl.size() - 1
+            polyline.delete(aPl.get(i))
+    aLb = label.all
+    if aLb.size() > 0
+        for i = 0 to aLb.size() - 1
+            if aLb.get(i).get_text() == "~"
+                label.delete(aLb.get(i))
+
+    // ─── Período dominante (autocorrelación) y senoide proyectada
+    int bestP = na
+    float bestR = -2.0
+    float pkTime = na
+    float trTime = na
+    nC = cycHist.size()
+    msBar = timeframe.in_seconds() * 1000.0
+    if iProj and nC >= 80
+        mC = cycHist.avg()
+        bool passedMin = false
+        float prevR = 1.0
+        for P = 8 to int(nC / 2)
+            float num = 0.0
+            float d1 = 0.0
+            float d2 = 0.0
+            for j = P to nC - 1
+                a = cycHist.get(j) - mC
+                b = cycHist.get(j - P) - mC
+                num += a * b
+                d1 += a * a
+                d2 += b * b
+            r = d1 > 0 and d2 > 0 ? num / math.sqrt(d1 * d2) : 0.0
+            if not passedMin and r > prevR
+                passedMin := true
+            if passedMin and r > bestR
+                bestR := r
+                bestP := P
+            prevR := r
+        if not na(bestP) and bestR > 0.2
+            // ajuste por mínimos cuadrados de y = c + a·sen(ωj) + b·cos(ωj) en las últimas 2 vueltas
+            L = math.min(nC, 2 * bestP)
+            w = 2.0 * math.pi / bestP
+            float sss = 0.0
+            float scc = 0.0
+            float ssc = 0.0
+            float s1 = 0.0
+            float c1 = 0.0
+            float sy = 0.0
+            float cy = 0.0
+            float yy = 0.0
+            for j = 0 to L - 1
+                y = cycHist.get(nC - L + j)
+                sn = math.sin(w * j)
+                cs = math.cos(w * j)
+                sss += sn * sn
+                scc += cs * cs
+                ssc += sn * cs
+                s1 += sn
+                c1 += cs
+                sy += sn * y
+                cy += cs * y
+                yy += y
+            // sistema 3×3 [sss ssc s1; ssc scc c1; s1 c1 L] · [a b c] = [sy cy yy] (Cramer)
+            det = sss * (scc * L - c1 * c1) - ssc * (ssc * L - c1 * s1) + s1 * (ssc * c1 - scc * s1)
+            if math.abs(det) > 1e-9
+                ca = (sy * (scc * L - c1 * c1) - ssc * (cy * L - c1 * yy) + s1 * (cy * c1 - scc * yy)) / det
+                cb = (sss * (cy * L - c1 * yy) - sy * (ssc * L - c1 * s1) + s1 * (ssc * yy - cy * s1)) / det
+                cc = (sss * (scc * yy - c1 * cy) - ssc * (ssc * yy - cy * s1) + sy * (ssc * c1 - scc * s1)) / det
+                pts = array.new<chart.point>()
+                kMax = math.min(bestP, 500)
+                float pkV = -1e18
+                float trV = 1e18
+                for k = 0 to kMax
+                    jj = L - 1 + k
+                    yv = cc + ca * math.sin(w * jj) + cb * math.cos(w * jj)
+                    pts.push(chart.point.from_index(bar_index + k, yv))
+                    if k > 0 and yv > pkV
+                        pkV := yv
+                        pkTime := time + k * msBar
+                    if k > 0 and yv < trV
+                        trV := yv
+                        trTime := time + k * msBar
+                polyline.new(pts, line_color = color.new(#F7C948, 20), line_style = line.style_dotted, line_width = 2)
+                label.new(bar_index + kMax, cc + ca * math.sin(w * (L - 1 + kMax)) + cb * math.cos(w * (L - 1 + kMax)), "~", style = label.style_none, textcolor = color.new(#F7C948, 0), tooltip = txt("Proyección del ciclo dominante (", "Dominant cycle projection (") + str.tostring(bestP) + txt(" barras)", " bars)"))
+
+    // ─── Estado actual
+    recentBrk = not na(lastBrkBar) and bar_index - lastBrkBar <= iH
+    string stTxt = ""
+    color stCol = chart.fg_color
+    if inZone and comp
+        stTxt := txt("COMPRESIÓN", "COMPRESSION") + " · " + str.tostring(compLen) + txt(" barras", " bars") + (compRising ? txt(" · el ATR ya sube", " · ATR already rising") : "")
+        stCol := #9C6ADE
+    else if inZone
+        stTxt := txt("SALIENDO DE LA COMPRESIÓN", "LEAVING COMPRESSION")
+        stCol := #2E86C1
+    else if not na(armBar)
+        stTxt := txt("LIBERACIÓN: esperando ruptura de la caja", "RELEASE: waiting for a box breakout")
+        stCol := #2E86C1
+    else if vol >= iPeakThr
+        stTxt := txt("AGOTAMIENTO (volatilidad en máximos)", "EXHAUSTION (volatility at highs)")
+        stCol := #9C6ADE
+    else if vol >= 70
+        stTxt := txt("EXPANSIÓN", "EXPANSION")
+        stCol := #26C6DA
+    else
+        stTxt := txt("NORMAL", "NORMAL")
+
+    // ─── Qué hacer
+    string doTxt = ""
+    if inZone
+        doTxt := txt("prepararse: marcar la caja (", "get ready: mark the box (") + str.tostring(zL, format.mintick) + " – " + str.tostring(zH, format.mintick) + txt(") y esperar la liberación.", ") and wait for the release.")
+    else if not na(armBar)
+        doTxt := txt("esperar cierre fuera de la caja: arriba de ", "wait for a close outside the box: above ") + str.tostring(armH, format.mintick) + txt(" o abajo de ", " or below ") + str.tostring(armL, format.mintick) + "."
+    else if recentBrk
+        doTxt := (lastBrkDir > 0 ? txt("ruptura ALCISTA activa", "BULLISH breakout active") : txt("ruptura BAJISTA activa", "BEARISH breakout active")) + " · stop " + str.tostring(lastBrkStop, format.mintick) + "."
+    else if vol >= iPeakThr
+        doTxt := txt("no perseguir el movimiento: tras picos de volatilidad suelen venir pausas o giros.", "don't chase: volatility peaks are usually followed by pauses or turns.")
+    else
+        doTxt := txt("sin señal de volatilidad: operar con estructura y ciclos de tiempo.", "no volatility signal: trade structure and time cycles.")
+    if not na(hAvg)
+        doTxt := doTxt + (hAvg < 0.45 ? txt(" Hurst bajo: favorece rangos (comprar soporte, vender resistencia).", " Low Hurst: favors ranges (buy support, sell resistance).") : hAvg > 0.55 ? txt(" Hurst alto: favorece rupturas y tendencias.", " High Hurst: favors breakouts and trends.") : "")
+
+    // ─── Alertas dinámicas (idioma seleccionable)
+    tk = syminfo.ticker + " · "
+    if iAComp and evCompStart
+        alert(tk + txt("Inicio de compresión de volatilidad", "Volatility compression started"), alert.freq_once_per_bar_close)
+    if iARel and evRelease
+        alert(tk + txt("Liberación de la compresión · caja ", "Compression release · box ") + str.tostring(armL, format.mintick) + " – " + str.tostring(armH, format.mintick), alert.freq_once_per_bar_close)
+    if iABrk and evLong
+        alert(tk + txt("Ruptura ALCISTA de la caja de compresión", "BULLISH breakout of the compression box"), alert.freq_once_per_bar_close)
+    if iABrk and evShort
+        alert(tk + txt("Ruptura BAJISTA de la caja de compresión", "BEARISH breakout of the compression box"), alert.freq_once_per_bar_close)
+    if iAPeak and evPeak
+        alert(tk + txt("Volatilidad en máximos (agotamiento)", "Volatility at highs (exhaustion)"), alert.freq_once_per_bar_close)
+    if iACyc and (evCycUp or evCycDn)
+        alert(tk + txt("El ciclo de volatilidad cruza 50 ", "Volatility cycle crosses 50 ") + (evCycUp ? "↑" : "↓"), alert.freq_once_per_bar_close)
+
+    // ─── Tabla
+    if not na(tb)
+        table.delete(tb)
+        tb := na
+    if iTable
+        tb := table.new(tblPos, 1, 8, bgcolor = color.new(chart.bg_color, 8), frame_color = color.new(chart.fg_color, 70), frame_width = 1, border_color = color.new(chart.fg_color, 88), border_width = 1)
+        fg = chart.fg_color
+        med = frAll.size() > 0 ? frAll.median() : na
+        cycDir = cyc > nz(cyc[1], cyc) ? "↗" : "↘"
+        perTxt = na(bestP) or bestR <= 0.2 ? txt("período poco claro", "unclear period") : txt("período ≈ ", "period ≈ ") + str.tostring(bestP) + "b (" + fmtDays(bestP * msBar / 86400000.0) + ")" + (na(pkTime) ? "" : txt(" · próx. pico ", " · next peak ") + fmtT(int(pkTime))) + (na(trTime) ? "" : txt(" · próx. valle ", " · next trough ") + fmtT(int(trTime)))
+        hTxt = na(hNow) ? txt("Hurst: desactivado o sin datos", "Hurst: off or no data") : "Hurst H(" + str.tostring(iHLen) + ") = " + str.tostring(hNow, "#.###") + txt(" · media ", " · avg ") + str.tostring(iHAvg) + " = " + str.tostring(hAvg, "#.###") + " → " + (hAvg > 0.55 ? txt("persistente (tendencia)", "persistent (trend)") : hAvg < 0.45 ? txt("reversión a la media (rango)", "mean-reverting (range)") : txt("aleatorio", "random"))
+        r1Tot = res1.size() > 0 ? res1.sum() : 0.0
+        r2Tot = res2.size() > 0 ? res2.sum() : 0.0
+        int w1 = 0
+        if res1.size() > 0
+            for j = 0 to res1.size() - 1
+                w1 += res1.get(j) > 0 ? 1 : 0
+        table.cell(tb, 0, 0, txt("CICLO DE VOLATILIDAD · ", "VOLATILITY CYCLE · ") + syminfo.ticker + " · " + txt("percentil ", "percentile ") + str.tostring(vol, "#"), text_color = fg, bgcolor = color.new(fg, 88), text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 1, txt("Estado: ", "State: ") + stTxt, text_color = stCol, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 2, txt("Qué hacer: ", "What to do: ") + doTxt, text_color = fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 3, txt("Ciclo ", "Cycle ") + str.tostring(cyc, "#") + " " + cycDir + (cyc >= 50 ? txt(" (sobre 50)", " (above 50)") : txt(" (bajo 50)", " (below 50)")) + " · " + perTxt, text_color = #B0B0B0, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 4, hTxt, text_color = fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 5, txt("Backtest ", "Backtest ") + str.tostring(iH) + txt(" barras · rango futuro: ", " bars · forward range: ") + statTxt(txt("Liberación", "Release"), frRel, med) + " | " + statTxt(txt("Cruce ↑", "Cross ↑"), frExp, med) + " | " + statTxt(txt("Pico", "Peak"), frPk, med), text_color = fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 6, txt("Ruptura tras liberación: ", "Breakout after release: ") + str.tostring(res1.size()) + txt(" operaciones", " trades") + (res1.size() > 0 ? " · " + txt("acierto 1R ", "1R win rate ") + str.tostring(w1 * 100.0 / res1.size(), "#") + "% · 1R " + (r1Tot >= 0 ? "+" : "") + str.tostring(r1Tot, "#.#") + "R · 2R " + (r2Tot >= 0 ? "+" : "") + str.tostring(r2Tot, "#.#") + "R" : ""), text_color = r1Tot > 0 ? #26A69A : r1Tot < 0 ? #EF5350 : fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 7, txt("Mide volatilidad, no dirección: la dirección la da la ruptura y la estructura.", "Measures volatility, not direction: breakout and structure give direction."), text_color = color.new(fg, 40), text_size = size.small, text_halign = text.align_left)
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Condiciones de alerta estáticas
+// ════════════════════════════════════════════════════════════════════════════
+alertcondition(evCompStart, "Compresión / Compression", "VolCycle: inicio de compresión / compression started")
+alertcondition(evRelease, "Liberación / Release", "VolCycle: liberación de la compresión / compression release")
+alertcondition(evLong, "Ruptura alcista / Bullish breakout", "VolCycle: ruptura alcista / bullish breakout")
+alertcondition(evShort, "Ruptura bajista / Bearish breakout", "VolCycle: ruptura bajista / bearish breakout")
+alertcondition(evPeak, "Agotamiento / Exhaustion", "VolCycle: volatilidad en máximos / volatility at highs")
+alertcondition(evCycUp or evCycDn, "Ciclo cruza 50 / Cycle crosses 50", "VolCycle: el ciclo cruza 50 / cycle crosses 50")
