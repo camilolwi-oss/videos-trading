@@ -1,0 +1,967 @@
+//@version=6
+indicator("Ciclos + Volatilidad · Cycles + Volatility", shorttitle = "Ciclos+Vol", overlay = true, max_lines_count = 100, max_labels_count = 300, max_boxes_count = 120)
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Ciclos + Volatilidad · Cycles + Volatility
+//  Fusión de time_cycles.pine y volatility_cycle.pine, validada con un backtest
+//  walk-forward en BTC 2017–2026 (ver guias/ciclos-volatilidad/BACKTEST.md).
+//
+//  SEÑAL (la parte que se opera; se calcula barra a barra, no repinta):
+//   1. Compresión: el percentil del ATR(14) en 100 barras cae a ≤ 5.
+//   2. Liberación: el percentil vuelve a superar 20.
+//   3. Ruptura: en ≤ 12 barras, un cierre por encima del máximo de la caja de compresión.
+//   4. Filtros: precio > EMA200 y momentum ≥ 2 de 3 (EMA20/50 apiladas y separándose,
+//      ATR subiendo, volumen creciente; checklist de la guía de Time Cycles).
+//   Entrada a la apertura siguiente · stop en el mínimo de la caja ·
+//   salida al cerrar bajo la EMA100 (o tras 180 barras).
+//
+//  CONTEXTO (no filtra la señal; el backtest no mostró mejora significativa):
+//   · Motor de ciclos de tiempo: anclas automáticas, subdivisión 2/3/5, ciclo
+//     dominante y su próxima ventana de pivote (se calcula en la última barra).
+//   · Exponente de Hurst (R/S): régimen tendencia / rango.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ───────────────────────────── 1 · General ─────────────────────────────
+G1 = "1 · General"
+iLang    = input.string("Español", "Idioma / Language", options = ["Español", "English"], group = G1)
+iTable   = input.bool(true, "Mostrar panel / Show panel", group = G1)
+iTblPos  = input.string("Arriba derecha / Top right", "Posición del panel / Panel position", options = ["Arriba derecha / Top right", "Abajo derecha / Bottom right", "Arriba izquierda / Top left", "Abajo izquierda / Bottom left"], group = G1)
+iShowEma = input.bool(false, "Mostrar EMA de tendencia / Show trend EMA", group = G1)
+
+// ───────────────────────────── 2 · Señal ─────────────────────────────
+G2 = "2 · Señal (validada) / Signal (validated)"
+iAtrLen   = input.int(14, "ATR", minval = 2, group = G2)
+iRankLen  = input.int(100, "Ventana del percentil / Percentile window", minval = 20, maxval = 1000, group = G2)
+iCompThr  = input.float(5.0, "Compresión: percentil ≤ / Compression: percentile ≤", minval = 0.0, maxval = 30.0, group = G2)
+iRelThr   = input.float(20.0, "Liberación: percentil > / Release: percentile >", minval = 5.0, maxval = 60.0, group = G2)
+iBrkH     = input.int(12, "Barras para romper la caja / Bars to break the box", minval = 1, maxval = 100, group = G2)
+iTrendLen = input.int(200, "EMA de tendencia / Trend EMA", minval = 20, group = G2)
+iMomMin   = input.int(2, "Momentum mínimo (de 3) / Min momentum (of 3)", minval = 0, maxval = 3, group = G2)
+iExitLen  = input.int(100, "EMA de salida / Exit EMA", minval = 5, group = G2)
+iTimeExit = input.int(180, "Salida por tiempo (barras) / Time exit (bars)", minval = 5, group = G2)
+iMinRisk  = input.float(0.5, "Riesgo mínimo (× ATR) / Min risk (× ATR)", minval = 0.0, step = 0.1, group = G2)
+iFee      = input.float(0.1, "Comisión por lado % (backtest) / Fee per side % (backtest)", minval = 0.0, step = 0.01, group = G2)
+
+// ───────────────────────────── 3 · Ciclos de tiempo (contexto) ─────────────────────────────
+G3 = "3 · Ciclos de tiempo / Time cycles"
+iCycles  = input.bool(true, "Calcular ciclos / Compute cycles", group = G3)
+iBase    = input.string("Auto", "Base de tiempo / Time base", options = ["Auto", "Calendario / Calendar", "Barras / Bars"], group = G3)
+iMaxBars = input.int(5000, "Barras del motor / Engine bars", minval = 300, maxval = 20000, step = 250, group = G3)
+iWin     = input.float(10.0, "Ventana ±% / Window ±%", minval = 3.0, maxval = 15.0, step = 0.5, group = G3)
+iPivStr  = input.int(0, "Fuerza de pivote (0 = auto) / Pivot strength (0 = auto)", minval = 0, maxval = 500, group = G3)
+iCand    = input.int(8, "Mínimos candidatos / Candidate lows", minval = 3, maxval = 12, group = G3)
+iMerge   = input.bool(true, "Fusionar mínimos dobles / Merge double bottoms", group = G3)
+iMergeT  = input.float(2.0, "Tolerancia mínimo doble % / Double-bottom tolerance %", minval = 0.2, maxval = 10.0, step = 0.1, group = G3)
+iMinMast = input.float(8.0, "Ciclo madre mínimo (% historia) / Min master cycle (% history)", minval = 2.0, maxval = 60.0, step = 1.0, group = G3)
+iMinBars = input.int(4, "Longitud mínima de ciclo (barras) / Min cycle length (bars)", minval = 3, maxval = 200, group = G3)
+iR1      = input.string("Auto", "Madre → N1 / Master → L1", options = ["Auto", "2", "3", "5"], group = G3)
+iR2      = input.string("Auto", "N1 → N2 / L1 → L2", options = ["Auto", "2", "3"], group = G3)
+iR3      = input.string("Auto", "N2 → N3 / L2 → L3", options = ["Auto", "2", "3"], group = G3)
+
+// ───────────────────────────── 4 · Hurst ─────────────────────────────
+G4 = "4 · Exponente de Hurst / Hurst exponent"
+iHurst = input.bool(true, "Calcular / Compute", group = G4)
+iHLen  = input.int(100, "Ventana R/S / R/S window", minval = 32, maxval = 500, group = G4)
+iHAvg  = input.int(10, "Media / Average", minval = 1, maxval = 50, group = G4)
+iHBars = input.int(500, "Barras calculadas / Bars computed", minval = 50, maxval = 5000, group = G4)
+
+// ───────────────────────────── 5 · Alertas ─────────────────────────────
+G5 = "5 · Alertas / Alerts"
+iAEntry = input.bool(true, "Señal de entrada / Entry signal", group = G5)
+iAExit  = input.bool(true, "Salida / Exit", group = G5)
+iAComp  = input.bool(true, "Compresión y liberación / Compression & release", group = G5)
+iACyc   = input.bool(true, "Ventana de ciclo / Cycle window", group = G5)
+
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Motor de ciclos de tiempo (copiado sin cambios de time_cycles.pine)
+// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+//  Tipos
+// ════════════════════════════════════════════════════════════════════════════
+// Fila de una tabla de rango disperso (sparse table) para mínimos/máximos O(1).
+type Row
+    array<int> v
+
+// Serie de precios analizada (gráfico principal o ratio).
+type Ser
+    array<int>   t
+    array<float> h
+    array<float> l
+    array<float> c
+    array<Row>   mn
+    array<Row>   mx
+    array<int>   lg
+    array<int>   pw
+    int          n     = 0
+    bool         cal   = true
+    float        msBar = 0.0
+
+// Un grado de ciclo (Madre, N1, N2, N3) y su validación.
+type Lvl
+    int          id
+    float        len    = 0.0
+    int          ratio  = 1
+    bool         on     = false
+    int          valid  = 0
+    int          tested = 0
+    float        score  = 0.0
+    int          st1    = -1
+    int          st2    = -1
+    int          lastTr = -1
+    float        lastPx = na
+    float        nextPx = na
+    bool         active = false
+    array<float> px
+    array<int>   st
+    array<int>   tro
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Utilidades
+// ════════════════════════════════════════════════════════════════════════════
+ES = iLang == "Español"
+txt(string es, string en) => ES ? es : en
+
+newSer() => Ser.new(array.new<int>(), array.new<float>(), array.new<float>(), array.new<float>(), array.new<Row>(), array.new<Row>(), array.new<int>(), array.new<int>())
+
+newLvl(int id) => Lvl.new(id, px = array.new<float>(), st = array.new<int>(), tro = array.new<int>())
+
+lvName(int i) => i == 0 ? txt("Madre", "Master") : (ES ? "N" : "L") + str.tostring(i)
+
+fmtT(int t) => str.format_time(t, timeframe.isintraday ? "dd/MM/yy HH:mm" : "dd/MM/yyyy", syminfo.timezone)
+
+fmtDays(float d) => math.abs(d) >= 1.0 ? str.tostring(d, "#.#") + "D" : str.tostring(d * 24.0, "#.#") + "h"
+
+fmtPct(float v) => (v >= 0 ? "+" : "") + str.tostring(v * 100.0, "#.#") + "%"
+
+yToP(float y, bool lg) => lg ? math.exp(y) : y
+pToY(float p, bool lg) => lg ? math.log(p) : p
+
+lvlScore(float sc, int te) => te > 0 ? (sc / te) * (te / (te + 3.0)) : 0.0
+ratioPen(int r) => r == 2 ? 0.0 : r == 3 ? 0.02 : 0.10
+
+// Opciones de subdivisión (Auto = probar 2, 3 y opcionalmente 5).
+optsOf(string sel, bool allow5) =>
+    a = array.new<int>()
+    if sel == "Auto"
+        a.push(2)
+        a.push(3)
+        if allow5
+            a.push(5)
+    else
+        a.push(int(str.tonumber(sel)))
+    a
+
+// Ciclo nominal de Hurst más cercano (±15 %).
+hurstName(float days) =>
+    names = array.from("5D", "10D", "20D", "40D", "80D", "20W", "9M", "18M", "27M", "54M", "9Y", "18Y")
+    vals  = array.from(5.0, 10.0, 20.0, 40.0, 80.0, 140.0, 270.0, 540.0, 822.0, 1095.0, 3285.0, 6570.0)
+    string res = "—"
+    float bestE = 0.15
+    for i = 0 to vals.size() - 1
+        e = math.abs(days / vals.get(i) - 1.0)
+        if e <= bestE
+            bestE := e
+            res := "≈" + names.get(i)
+    res
+
+// ─── Construcción de la serie: log2, potencias y tablas de rango (RMQ)
+buildSer(Ser s, bool cal) =>
+    n = s.t.size()
+    s.n := n
+    s.cal := cal
+    s.msBar := n > 1 ? (s.t.get(n - 1) - s.t.get(0)) / (n - 1.0) : timeframe.in_seconds() * 1000.0
+    s.lg.clear()
+    s.pw.clear()
+    s.mn.clear()
+    s.mx.clear()
+    if n > 0
+        s.lg.push(0)
+        for i = 1 to n
+            s.lg.push(i == 1 ? 0 : s.lg.get(int(i / 2)) + 1)
+        r0n = array.new<int>(n, 0)
+        r0x = array.new<int>(n, 0)
+        for i = 0 to n - 1
+            r0n.set(i, i)
+            r0x.set(i, i)
+        s.mn.push(Row.new(r0n))
+        s.mx.push(Row.new(r0x))
+        s.pw.push(1)
+        int k = 1
+        int p = 2
+        while p <= n
+            pn = s.mn.get(k - 1).v
+            pm = s.mx.get(k - 1).v
+            half = int(p / 2)
+            cnt = n - p + 1
+            rn = array.new<int>(cnt, 0)
+            rx = array.new<int>(cnt, 0)
+            for i = 0 to cnt - 1
+                a = pn.get(i)
+                b = pn.get(i + half)
+                rn.set(i, s.l.get(a) <= s.l.get(b) ? a : b)
+                c = pm.get(i)
+                d = pm.get(i + half)
+                rx.set(i, s.h.get(c) >= s.h.get(d) ? c : d)
+            s.mn.push(Row.new(rn))
+            s.mx.push(Row.new(rx))
+            s.pw.push(p)
+            k += 1
+            p *= 2
+    n
+
+// Índice del mínimo (low) en [l0, r0]. -1 si el rango es vacío.
+qMin(Ser s, int l0, int r0) =>
+    int l = math.max(l0, 0)
+    int r = math.min(r0, s.n - 1)
+    int res = -1
+    if l <= r
+        k = s.lg.get(r - l + 1)
+        row = s.mn.get(k).v
+        a = row.get(l)
+        b = row.get(r - s.pw.get(k) + 1)
+        res := s.l.get(a) <= s.l.get(b) ? a : b
+    res
+
+// Índice del máximo (high) en [l0, r0]. -1 si el rango es vacío.
+qMax(Ser s, int l0, int r0) =>
+    int l = math.max(l0, 0)
+    int r = math.min(r0, s.n - 1)
+    int res = -1
+    if l <= r
+        k = s.lg.get(r - l + 1)
+        row = s.mx.get(k).v
+        a = row.get(l)
+        b = row.get(r - s.pw.get(k) + 1)
+        res := s.h.get(a) >= s.h.get(b) ? a : b
+    res
+
+// ─── Eje X del ciclo: tiempo (ms) en modo calendario, índice de barra en modo barras
+xOf(Ser s, int i) => s.cal ? float(s.t.get(i)) : float(i)
+
+// Primer índice con tiempo >= t (0..n).
+idxCeilT(Ser s, float t) =>
+    int lo = 0
+    int hi = s.n
+    while lo < hi
+        mid = int((lo + hi) / 2)
+        if s.t.get(mid) < t
+            lo := mid + 1
+        else
+            hi := mid
+    lo
+
+// Primera barra con x >= x0 (0..n).
+bCeil(Ser s, float x) => s.cal ? idxCeilT(s, x) : math.min(math.max(int(math.ceil(x - 1e-6)), 0), s.n)
+
+// Última barra con x <= x0 (-1..n-1).
+bFloor(Ser s, float x) => s.cal ? idxCeilT(s, math.floor(x) + 1.0) - 1 : math.max(math.min(int(math.floor(x + 1e-6)), s.n - 1), -1)
+
+// Tiempo (ms) de una coordenada x, incluida la proyección a futuro.
+timeOf(Ser s, float x) =>
+    int res = 0
+    if s.cal
+        res := int(math.round(x))
+    else
+        n1 = s.n - 1
+        if x >= n1
+            res := s.t.get(n1) + int(math.round((x - n1) * s.msBar))
+        else if x <= 0
+            res := s.t.get(0) + int(math.round(x * s.msBar))
+        else
+            i0 = int(math.floor(x))
+            res := s.t.get(i0) + int(math.round((x - i0) * (s.t.get(i0 + 1) - s.t.get(i0))))
+    res
+
+lenDays(Ser s, float lenX) => s.cal ? lenX / 86400000.0 : lenX * s.msBar / 86400000.0
+lenBars(Ser s, float lenX) => s.cal ? lenX / math.max(s.msBar, 1.0) : lenX
+daysToX(Ser s, float d) => s.cal ? d * 86400000.0 : d * 86400000.0 / math.max(s.msBar, 1.0)
+
+// Nombre legible de un ciclo por su duración ("80D", "4.5h") en lugar de Madre/N1/N2/N3.
+cycNm(Ser s, Lvl L) => fmtDays(lenDays(s, L.len))
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Validación de un pivote proyectado
+//  1 = válido (mínimo del ciclo dentro de ±ventana)
+//  2 = continuación (mínimo más alto local dentro de ±ventana/2)
+//  3 = límite (mínimo del ciclo dentro de ±1.5×ventana, p. ej. 15 %)
+//  0 = inválido · -1 = no evaluable (sin datos o ventana sin terminar)
+// ════════════════════════════════════════════════════════════════════════════
+testPivot(Ser s, float px, float lenX, float winF) =>
+    int st = -1
+    int tro = -1
+    if s.n > 2 and lenX > 0
+        xF = xOf(s, 0)
+        xL = xOf(s, s.n - 1)
+        wX = winF * lenX
+        if px - wX >= xF and px + wX <= xL
+            lo = bCeil(s, px - wX)
+            hi = bFloor(s, px + wX)
+            if lo <= hi
+                mw = qMin(s, bCeil(s, px - lenX / 3.0), bFloor(s, px + lenX / 3.0))
+                m = qMin(s, lo, hi)
+                if m == mw
+                    st := 1
+                    tro := m
+                else
+                    lo5 = bCeil(s, px - wX * 0.5)
+                    hi5 = bFloor(s, px + wX * 0.5)
+                    m5 = lo5 <= hi5 ? qMin(s, lo5, hi5) : -1
+                    bool cont = false
+                    if m5 >= 0
+                        x5 = xOf(s, m5)
+                        cont := qMin(s, bCeil(s, x5 - lenX / 6.0), bFloor(s, x5 + lenX / 6.0)) == m5
+                    if cont
+                        st := 2
+                        tro := m5
+                    else
+                        m15 = qMin(s, bCeil(s, px - wX * 1.5), bFloor(s, px + wX * 1.5))
+                        if m15 >= 0 and m15 == mw
+                            st := 3
+                            tro := m15
+                        else
+                            st := 0
+                            tro := m
+    [st, tro]
+
+// Evaluación rápida de un grado (para elegir anclas y subdivisión).
+evalLvl(Ser s, float x0, float lenX, float winF, float exA, float exB) =>
+    float sc = 0.0
+    int va = 0
+    int te = 0
+    if lenX > 0 and s.n > 2
+        xF = xOf(s, 0)
+        xL = xOf(s, s.n - 1)
+        kMin = int(math.ceil((xF - x0) / lenX))
+        kMax = int(math.floor((xL - x0) / lenX))
+        if kMax >= kMin
+            for k = kMin to kMax
+                pxk = x0 + k * lenX
+                if math.abs(pxk - exA) > lenX * 0.02 and math.abs(pxk - exB) > lenX * 0.02
+                    [stt, tro] = testPivot(s, pxk, lenX, winF)
+                    if stt >= 0
+                        te += 1
+                        if stt == 1
+                            va += 1
+                            sc += 1.0
+                        else if stt == 2
+                            va += 1
+                            sc += 0.85
+                        else if stt == 3
+                            sc += 0.5
+    [sc, va, te]
+
+// Análisis completo de un grado: guarda cada pivote, su estado y el próximo pivote.
+analyze(Ser s, Lvl L, float x0, float winF, float exA, float exB) =>
+    L.px.clear()
+    L.st.clear()
+    L.tro.clear()
+    L.valid := 0
+    L.tested := 0
+    L.score := 0.0
+    L.st1 := -1
+    L.st2 := -1
+    L.lastTr := -1
+    L.lastPx := na
+    L.nextPx := na
+    L.active := false
+    if L.on and L.len > 0 and s.n > 2
+        lenX = L.len
+        xF = xOf(s, 0)
+        xL = xOf(s, s.n - 1)
+        wX = winF * lenX
+        kMin = int(math.ceil((xF - x0) / lenX))
+        kMax = int(math.floor((xL - x0) / lenX)) + 1
+        if kMax >= kMin
+            for k = kMin to kMax
+                pxk = x0 + k * lenX
+                if pxk + wX > xL
+                    if na(L.nextPx)
+                        L.nextPx := pxk
+                        L.active := xL >= pxk - wX
+                else
+                    [stt, tro] = testPivot(s, pxk, lenX, winF)
+                    isAnchor = math.abs(pxk - exA) <= lenX * 0.02 or math.abs(pxk - exB) <= lenX * 0.02
+                    L.px.push(pxk)
+                    L.st.push(stt)
+                    L.tro.push(tro)
+                    if stt >= 0
+                        if not isAnchor
+                            L.tested := L.tested + 1
+                            if stt == 1
+                                L.valid := L.valid + 1
+                                L.score := L.score + 1.0
+                            else if stt == 2
+                                L.valid := L.valid + 1
+                                L.score := L.score + 0.85
+                            else if stt == 3
+                                L.score := L.score + 0.5
+                        L.st2 := L.st1
+                        L.st1 := stt
+                        if stt == 1 or stt == 2
+                            L.lastTr := tro
+                            L.lastPx := pxk
+        if na(L.nextPx)
+            L.nextPx := x0 + (kMax + 1) * lenX
+    L.tested
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Anclas automáticas: mínimos mayores por prominencia
+// ════════════════════════════════════════════════════════════════════════════
+findCands(Ser s, int p, int K, bool merge, float tolPct) =>
+    n = s.n
+    swI = array.new<int>()
+    if n > 2 * p + 2
+        for i = int(p / 2) to n - 1 - p
+            if qMin(s, i - p, i + p) == i
+                swI.push(i)
+    m = swI.size()
+    prom = array.new<float>(m, 0.0)
+    if m > 0
+        for j = 0 to m - 1
+            i = swI.get(j)
+            li = s.l.get(i)
+            int lb = -1
+            if j > 0
+                for q = j - 1 to 0
+                    if s.l.get(swI.get(q)) < li
+                        lb := swI.get(q)
+                        break
+            int rb = -1
+            if j < m - 1
+                for q = j + 1 to m - 1
+                    if s.l.get(swI.get(q)) < li
+                        rb := swI.get(q)
+                        break
+            lMax = s.h.get(qMax(s, lb < 0 ? 0 : lb, i))
+            rMax = s.h.get(qMax(s, i, rb < 0 ? n - 1 : rb))
+            float key = 0.0
+            if lb >= 0 and rb >= 0
+                key := math.min(lMax, rMax)
+            else if lb >= 0
+                key := lMax
+            else if rb >= 0
+                key := rMax
+            else
+                key := math.max(lMax, rMax)
+            prom.set(j, li > 0 and key > 0 ? math.log(key / li) : key - li)
+    // Los K mínimos más prominentes, ordenados en el tiempo.
+    selJ = array.new<int>()
+    used = array.new<bool>(m, false)
+    if m > 0
+        for rep = 1 to math.min(K, m)
+            float best = -1e18
+            int bj = -1
+            for j = 0 to m - 1
+                if not used.get(j) and prom.get(j) > best
+                    best := prom.get(j)
+                    bj := j
+            if bj >= 0
+                used.set(bj, true)
+                selJ.push(bj)
+    selJ.sort(order.ascending)
+    cX = array.new<float>()
+    cI = array.new<int>()
+    cP = array.new<float>()
+    ns = selJ.size()
+    int qq = 0
+    while qq < ns
+        j1 = selJ.get(qq)
+        i1 = swI.get(j1)
+        bool merged = false
+        if merge and qq < ns - 1
+            j2 = selJ.get(qq + 1)
+            i2 = swI.get(j2)
+            l1 = s.l.get(i1)
+            l2 = s.l.get(i2)
+            if l1 > 0 and l2 > 0 and math.abs(math.log(l1 / l2)) <= tolPct / 100.0 and i2 - i1 <= 4 * p
+                // Mínimo doble: la guía usa el punto medio para capturar el ritmo.
+                cX.push((xOf(s, i1) + xOf(s, i2)) / 2.0)
+                cI.push(int(math.round((i1 + i2) / 2.0)))
+                cP.push(math.max(prom.get(j1), prom.get(j2)))
+                merged := true
+                qq += 2
+        if not merged
+            cX.push(xOf(s, i1))
+            cI.push(i1)
+            cP.push(prom.get(j1))
+            qq += 1
+    [cX, cI, cP]
+
+// Prueba todos los pares de mínimos mayores y las subdivisiones 2/3/5 → 2/3.
+// Puntaje = acierto N1 + acierto N2 (con confianza por muestra) + prominencia − penalizaciones.
+selectCycle(Ser s, array<float> cX, array<int> cI, array<float> cP, float winF, int minBars, float minMastPct, array<int> o1, array<int> o2) =>
+    float bestS = -1e18
+    float bx0 = na
+    float bD = na
+    int br1 = 2
+    int br2 = 2
+    int ba = -1
+    int bb = -1
+    m = cX.size()
+    maxP = m > 0 ? math.max(cP.max(), 1e-9) : 1.0
+    minD = math.max(minBars * 4, int(math.round(s.n * minMastPct / 100.0)))
+    if m >= 2
+        for a = 0 to m - 2
+            for b = a + 1 to m - 1
+                dB = cI.get(b) - cI.get(a)
+                if dB >= minD
+                    D = cX.get(b) - cX.get(a)
+                    float pen0 = 0.0
+                    if b - a > 1
+                        for c = a + 1 to b - 1
+                            if cP.get(c) > math.min(cP.get(a), cP.get(b))
+                                pen0 := 0.05
+                    promN = (cP.get(a) + cP.get(b)) / (2.0 * maxP)
+                    for r1 in o1
+                        for r2 in o2
+                            if dB * 1.0 / (r1 * r2) >= minBars
+                                [s1, v1, t1] = evalLvl(s, cX.get(a), D / r1, winF, cX.get(a), cX.get(b))
+                                [s2, v2, t2] = evalLvl(s, cX.get(a), D / r1 / r2, winF, cX.get(a), cX.get(b))
+                                sc = 0.45 * lvlScore(s1, t1) + 0.45 * lvlScore(s2, t2) + 0.10 * promN - ratioPen(r1) - 0.5 * ratioPen(r2) - pen0
+                                if sc > bestS
+                                    bestS := sc
+                                    bx0 := cX.get(a)
+                                    bD := D
+                                    br1 := r1
+                                    br2 := r2
+                                    ba := a
+                                    bb := b
+    [ba >= 0, bx0, bD, br1, br2, ba, bb]
+
+// Mejor subdivisión para anclas fijas (modo manual).
+pickRatios(Ser s, float x0, float D, float winF, int minBars, array<int> o1, array<int> o2) =>
+    float bs = -1e18
+    int b1 = 2
+    int b2 = 2
+    for r1 in o1
+        for r2 in o2
+            if lenBars(s, D) / (r1 * r2) >= minBars
+                [s1, v1, t1] = evalLvl(s, x0, D / r1, winF, x0, x0 + D)
+                [s2, v2, t2] = evalLvl(s, x0, D / r1 / r2, winF, x0, x0 + D)
+                sc = 0.5 * lvlScore(s1, t1) + 0.5 * lvlScore(s2, t2) - ratioPen(r1) - 0.5 * ratioPen(r2)
+                if sc > bs
+                    bs := sc
+                    b1 := r1
+                    b2 := r2
+    [b1, b2]
+
+// Motor completo sobre una serie: anclas → subdivisión → 4 grados analizados.
+// Devuelve [ok, x0, exA, exB, índice dominante].
+runEngine(Ser s, array<Lvl> LV, bool manual, int t1, int t2, float winF) =>
+    bool ok = false
+    float x0 = na
+    float exA = na
+    float exB = na
+    int dom = -1
+    n = s.n
+    if n >= 60
+        p = iPivStr > 0 ? iPivStr : math.max(2, int(math.round(n / 60.0)))
+        o1 = optsOf(iR1, true)
+        o2 = optsOf(iR2, false)
+        o3 = optsOf(iR3, false)
+        float D = na
+        int r1 = 2
+        int r2 = 2
+        if manual
+            ta1 = math.min(t1, t2)
+            ta2 = math.max(t1, t2)
+            xa = s.cal ? float(ta1) : float(idxCeilT(s, ta1))
+            xb = s.cal ? float(ta2) : float(idxCeilT(s, ta2))
+            if xb > xa
+                [m1, m2] = pickRatios(s, xa, xb - xa, winF, iMinBars, o1, o2)
+                ok := true
+                x0 := xa
+                D := xb - xa
+                r1 := m1
+                r2 := m2
+                exA := xa
+                exB := xb
+        else
+            [cX, cI, cP] = findCands(s, p, iCand, iMerge, iMergeT)
+            [okS, sx0, sD, sr1, sr2, sa, sb] = selectCycle(s, cX, cI, cP, winF, iMinBars, iMinMast, o1, o2)
+            if okS
+                ok := true
+                x0 := sx0
+                D := sD
+                r1 := sr1
+                r2 := sr2
+                exA := cX.get(sa)
+                exB := cX.get(sb)
+        if ok
+            // Nivel 3: mejor subdivisión 2/3 del nivel 2.
+            int r3 = 2
+            float bs3 = -1e18
+            for a3 in o3
+                l3 = D / r1 / r2 / a3
+                if lenBars(s, l3) >= iMinBars
+                    [s3, v3, t3] = evalLvl(s, x0, l3, winF, exA, exB)
+                    sc3 = lvlScore(s3, t3) - ratioPen(a3)
+                    if sc3 > bs3
+                        bs3 := sc3
+                        r3 := a3
+            lens = array.from(D, D / r1, D / r1 / r2, D / r1 / r2 / r3)
+            rats = array.from(1, r1, r2, r3)
+            for i = 0 to 3
+                Lq = LV.get(i)
+                Lq.len := lens.get(i)
+                Lq.ratio := rats.get(i)
+                Lq.on := lenBars(s, Lq.len) >= iMinBars
+                analyze(s, Lq, x0, winF, exA, exB)
+            // Ciclo dominante = más aciertos directos (con al menos 3 pruebas).
+            float domS = -1.0
+            for i = 0 to 3
+                Lq = LV.get(i)
+                if Lq.on and Lq.tested >= 3
+                    sv = lvlScore(Lq.score, Lq.tested)
+                    if sv > domS
+                        domS := sv
+                        dom := i
+            if dom < 0
+                dom := LV.get(1).on ? 1 : 0
+    [ok, x0, exA, exB, dom]
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Exponente de Hurst (copiado sin cambios de volatility_cycle.pine)
+// ════════════════════════════════════════════════════════════════════════════
+// Exponente de Hurst por rango reescalado (R/S) sobre una ventana de retornos.
+hurstRS(array<float> x) =>
+    n = x.size()
+    lx = array.new<float>()
+    ly = array.new<float>()
+    int s = 8
+    while s <= n / 2
+        float acc = 0.0
+        int cnt = 0
+        int i0 = 0
+        while i0 + s <= n
+            float m = 0.0
+            for j = i0 to i0 + s - 1
+                m += x.get(j)
+            m := m / s
+            float cum = 0.0
+            float mxC = -1e18
+            float mnC = 1e18
+            float ss2 = 0.0
+            for j = i0 to i0 + s - 1
+                dv = x.get(j) - m
+                cum += dv
+                mxC := math.max(mxC, cum)
+                mnC := math.min(mnC, cum)
+                ss2 += dv * dv
+            sd = math.sqrt(ss2 / s)
+            if sd > 0
+                acc += (mxC - mnC) / sd
+                cnt += 1
+            i0 += s
+        if cnt > 0
+            lx.push(math.log(s))
+            ly.push(math.log(acc / cnt))
+        s *= 2
+    float h = na
+    k = lx.size()
+    if k >= 2
+        ax = lx.avg()
+        ay = ly.avg()
+        float num = 0.0
+        float den = 0.0
+        for j = 0 to k - 1
+            num += (lx.get(j) - ax) * (ly.get(j) - ay)
+            den += (lx.get(j) - ax) * (lx.get(j) - ax)
+        h := den > 0 ? num / den : na
+    h
+
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Utilidades propias del indicador fusionado
+// ════════════════════════════════════════════════════════════════════════════
+fmtR(float r) => (r >= 0 ? "+" : "") + str.tostring(r, "#.##") + "R"
+fmtPx(float p) => str.tostring(p, format.mintick)
+ckm(bool b) => b ? "✓" : "✗"
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Volatilidad, momentum y señal (barra a barra: no repinta)
+// ════════════════════════════════════════════════════════════════════════════
+atrV    = ta.atr(iAtrLen)
+vol     = ta.percentrank(atrV, iRankLen)
+emaF    = ta.ema(close, 20)
+emaS    = ta.ema(close, 50)
+emaT    = ta.ema(close, iTrendLen)
+emaX    = ta.ema(close, iExitLen)
+atrMa   = ta.sma(atrV, 20)
+volF    = ta.sma(volume, 5)
+volS    = ta.sma(volume, 20)
+emaOk   = close > emaF and close > emaS and emaF > emaS and emaF > emaF[3] and emaS > emaS[3] and (emaF - emaS) > (emaF[5] - emaS[5])
+atrOk   = atrV > atrV[3] and atrV > atrMa
+volOk   = volS > 0 and volF > volS * 1.1
+mom     = (emaOk ? 1 : 0) + (atrOk ? 1 : 0) + (volOk ? 1 : 0)
+trendOk = close > emaT
+comp    = vol <= iCompThr
+xRel    = ta.crossover(vol, iRelThr)
+hi200   = ta.highest(high, 200)
+lo200   = ta.lowest(low, 200)
+
+// Zona de compresión → liberación → caja → ruptura.
+var bool  inZone = false
+var float zH     = na
+var float zL     = na
+var int   zStart = na
+var float armH   = na
+var float armL   = na
+var int   armBar = na
+var box   curBox = na
+var int   compLen = 0
+bool  evCompStart = false
+bool  evRelease   = false
+bool  evBrkUp     = false
+float brkStop     = na
+compLen := comp ? compLen + 1 : 0
+
+if not inZone and comp
+    inZone := true
+    evCompStart := true
+    zH := high
+    zL := low
+    zStart := bar_index
+    curBox := box.new(bar_index, high, bar_index, low, border_color = color.new(#9C6ADE, 40), bgcolor = color.new(#9C6ADE, 85))
+else if inZone
+    zH := math.max(zH, high)
+    zL := math.min(zL, low)
+    if not na(curBox)
+        box.set_right(curBox, bar_index)
+        box.set_top(curBox, zH)
+        box.set_bottom(curBox, zL)
+
+if inZone and xRel
+    evRelease := true
+    inZone := false
+    armH := zH
+    armL := zL
+    armBar := bar_index
+    if not na(curBox)
+        box.set_bgcolor(curBox, color.new(#2E86C1, 85))
+        box.set_border_color(curBox, color.new(#2E86C1, 30))
+
+if not na(armBar)
+    if not na(curBox) and not inZone
+        box.set_right(curBox, bar_index)
+    if bar_index - armBar > iBrkH
+        armBar := na
+        if not na(curBox) and not inZone
+            box.set_bgcolor(curBox, color.new(#808080, 92))
+            box.set_border_color(curBox, color.new(#808080, 70))
+            curBox := na
+    else if close > armH
+        evBrkUp := true
+        brkStop := armL
+        armBar := na
+        if not na(curBox) and not inZone
+            box.set_bgcolor(curBox, color.new(#26A69A, 85))
+            box.set_border_color(curBox, color.new(#26A69A, 30))
+            curBox := na
+    else if close < armL
+        armBar := na
+        if not na(curBox) and not inZone
+            box.set_bgcolor(curBox, color.new(#EF5350, 90))
+            box.set_border_color(curBox, color.new(#EF5350, 50))
+            curBox := na
+
+sigLong = evBrkUp and trendOk and mom >= iMomMin and (close - brkStop) >= iMinRisk * atrV
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Posición y backtest en el gráfico (mismas reglas que el backtest en Python)
+// ════════════════════════════════════════════════════════════════════════════
+var bool  inPos    = false
+var bool  pending  = false
+var float pendStop = na
+var float ePx      = na
+var float sPx      = na
+var float eRisk    = na
+var int   eBar     = na
+var int   eTime    = na
+var int   lastExit = -1
+var array<float> rArr = array.new<float>()
+var int   firstTrade = na
+bool  evEntry = false
+bool  evExit  = false
+float exitR   = na
+
+// 1) entrada a la apertura de la barra siguiente a la señal
+if pending
+    pending := false
+    risk0 = open - pendStop
+    if risk0 > 0 and risk0 / open <= 0.25
+        inPos := true
+        ePx := open
+        sPx := pendStop
+        eRisk := risk0
+        eBar := bar_index
+        eTime := time
+        evEntry := true
+        if na(firstTrade)
+            firstTrade := time
+
+// 2) gestión: stop → cierre bajo la EMA de salida → tiempo
+if inPos
+    float res = na
+    if low <= sPx
+        res := (sPx - ePx) / eRisk
+    else if bar_index > eBar and close < emaX
+        res := (close - ePx) / eRisk
+    else if bar_index - eBar >= iTimeExit
+        res := (close - ePx) / eRisk
+    if not na(res)
+        exitR := res - 2.0 * iFee / 100.0 * ePx / eRisk
+        rArr.push(exitR)
+        inPos := false
+        evExit := true
+        lastExit := bar_index
+
+// 3) nueva señal (una posición a la vez)
+if sigLong and not inPos and not pending and bar_index > lastExit
+    pending := true
+    pendStop := brkStop
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Exponente de Hurst (solo en las últimas barras)
+// ════════════════════════════════════════════════════════════════════════════
+var array<float> lrets = array.new<float>()
+var array<float> hHist = array.new<float>()
+lrets.push(close > 0 and close[1] > 0 ? math.log(close / close[1]) : 0.0)
+if lrets.size() > iHLen
+    lrets.shift()
+float hNow = na
+if iHurst and bar_index >= last_bar_index - iHBars and lrets.size() == iHLen
+    hNow := hurstRS(lrets)
+    hHist.push(hNow)
+    if hHist.size() > iHAvg
+        hHist.shift()
+hAvg = hHist.size() > 0 ? hHist.avg() : na
+
+// Serie para el motor de ciclos.
+var Ser S = newSer()
+if bar_index >= last_bar_index - iMaxBars + 1
+    S.t.push(time)
+    S.h.push(high)
+    S.l.push(low)
+    S.c.push(close)
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Gráfico (mínimo): señal, salida, stop y EMA de salida mientras hay operación
+// ════════════════════════════════════════════════════════════════════════════
+plotshape(sigLong, "Señal larga / Long signal", shape.triangleup, location.belowbar, color = #26A69A, size = size.small)
+plotshape(evExit, "Salida / Exit", shape.xcross, location.abovebar, color = color.new(#808080, 0), size = size.tiny)
+plot(inPos ? sPx : na, "Stop", color = color.new(#EF5350, 10), style = plot.style_linebr, linewidth = 1)
+plot(inPos ? emaX : na, "EMA de salida / Exit EMA", color = color.new(#26A69A, 10), style = plot.style_linebr, linewidth = 1)
+plot(iShowEma ? emaT : na, "EMA de tendencia / Trend EMA", color = color.new(#808080, 50))
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Última barra: ciclos (contexto), panel y alertas
+// ════════════════════════════════════════════════════════════════════════════
+tblPos = iTblPos == "Arriba derecha / Top right" ? position.top_right : iTblPos == "Abajo derecha / Bottom right" ? position.bottom_right : iTblPos == "Arriba izquierda / Top left" ? position.top_left : position.bottom_left
+var table tb     = na
+var box   cycBox = na
+var label cycLbl = na
+var bool  fCycWin = false
+
+if barstate.islast
+    fCycWin := false
+    if not na(cycBox)
+        box.delete(cycBox)
+        cycBox := na
+    if not na(cycLbl)
+        label.delete(cycLbl)
+        cycLbl := na
+
+    // ─── Ciclos de tiempo: ciclo dominante y su próxima ventana
+    string cycTxt = txt("ciclos desactivados", "cycles off")
+    int cycState = 0
+    if iCycles
+        winF = iWin / 100.0
+        useCal = iBase == "Calendario / Calendar" ? true : iBase == "Barras / Bars" ? false : (not timeframe.isintraday or syminfo.type == "crypto")
+        nS = buildSer(S, useCal)
+        LV = array.new<Lvl>()
+        for i = 0 to 3
+            LV.push(newLvl(i))
+        [ok, x0, exA, exB, dom] = runEngine(S, LV, false, 0, 0, winF)
+        if ok
+            T = LV.get(dom)
+            xL = xOf(S, nS - 1)
+            xP = xOf(S, nS - 2)
+            wX = winF * T.len
+            nx = T.nextPx
+            ideal = xL >= nx - wX * 0.5 and xL <= nx + wX * 0.5
+            cycState := ideal ? 3 : T.active ? 2 : 1
+            fCycWin := xL >= nx - wX and xP < nx - wX
+            hr = T.tested > 0 ? T.valid * 100.0 / T.tested : 0.0
+            dl = lenDays(S, nx - wX - xL)
+            stTxt = cycState == 3 ? txt("ZONA IDEAL", "IDEAL ZONE") : cycState == 2 ? txt("EN VENTANA", "IN WINDOW") : txt("faltan ", "in ") + fmtDays(math.max(dl, 0))
+            cycTxt := cycNm(S, T) + " · " + txt("aciertos ", "hits ") + str.tostring(T.valid) + "/" + str.tostring(T.tested) + " (" + str.tostring(hr, "#") + "%) · " + txt("próx. pivote ", "next pivot ") + fmtT(timeOf(S, nx)) + " ±" + fmtDays(lenDays(S, wX)) + " · " + stTxt
+            bandCol = cycState == 3 ? #26A69A : cycState == 2 ? #FFA726 : #808080
+            cycBox := box.new(timeOf(S, nx - wX), hi200 * 1.01, timeOf(S, nx + wX), lo200 * 0.99, xloc = xloc.bar_time, border_width = 0, bgcolor = color.new(bandCol, cycState >= 2 ? 80 : 90))
+            cycLbl := label.new(timeOf(S, nx), lo200 * 0.99, txt("Ciclo ", "Cycle ") + cycNm(S, T) + " · " + fmtT(timeOf(S, nx)) + " · " + stTxt, xloc = xloc.bar_time, style = label.style_label_up, color = color.new(bandCol, 15), textcolor = color.white, size = size.small, tooltip = txt("Próximo pivote del ciclo dominante (contexto, no filtra la señal). Ventana: ", "Next pivot of the dominant cycle (context, does not filter the signal). Window: ") + fmtT(timeOf(S, nx - wX)) + " → " + fmtT(timeOf(S, nx + wX)))
+        else
+            cycTxt := txt("sin ciclo válido (pocos datos)", "no valid cycle (not enough data)")
+
+    // ─── Estado de la señal
+    stCode = inPos ? 1 : pending ? 2 : not na(armBar) ? 3 : inZone ? 4 : 0
+    curR = inPos ? (close - ePx) / eRisk : na
+    sigTxt = stCode == 1 ? txt("EN OPERACIÓN desde ", "IN TRADE since ") + fmtT(eTime) + " · " + txt("entrada ", "entry ") + fmtPx(ePx) + " · stop " + fmtPx(sPx) + " · " + txt("sale si cierra < EMA", "exits on close < EMA") + str.tostring(iExitLen) + " (" + fmtPx(emaX) + ") · " + txt("ahora ", "now ") + fmtR(curR) : stCode == 2 ? txt("SEÑAL LARGA: entrar en la apertura · stop ", "LONG SIGNAL: enter at the open · stop ") + fmtPx(pendStop) : stCode == 3 ? txt("LIBERACIÓN: esperar cierre > ", "RELEASE: wait for a close > ") + fmtPx(armH) + txt(" (caja ", " (box ") + fmtPx(armL) + " – " + fmtPx(armH) + ")" : stCode == 4 ? txt("COMPRESIÓN ", "COMPRESSION ") + str.tostring(compLen) + txt(" barras · caja ", " bars · box ") + fmtPx(zL) + " – " + fmtPx(zH) : txt("ESPERAR: sin compresión de volatilidad", "WAIT: no volatility compression")
+    sigCol = stCode == 1 or stCode == 2 ? #26A69A : stCode == 3 ? #2E86C1 : stCode == 4 ? #9C6ADE : chart.fg_color
+    filtTxt = txt("Filtros: tendencia (EMA", "Filters: trend (EMA") + str.tostring(iTrendLen) + ") " + ckm(trendOk) + " · momentum " + str.tostring(mom) + "/3 (EMA " + ckm(emaOk) + " ATR " + ckm(atrOk) + " Vol " + ckm(volOk) + ") · " + txt("volatilidad: percentil ", "volatility: percentile ") + str.tostring(vol, "#")
+    filtOk = trendOk and mom >= iMomMin
+
+    // ─── Backtest de este gráfico
+    nT = rArr.size()
+    int wins = 0
+    float gp = 0.0
+    float gl = 0.0
+    float cum = 0.0
+    float peak = 0.0
+    float mdd = 0.0
+    if nT > 0
+        for i = 0 to nT - 1
+            r = rArr.get(i)
+            wins += r > 0 ? 1 : 0
+            gp += r > 0 ? r : 0.0
+            gl += r < 0 ? -r : 0.0
+            cum += r
+            peak := math.max(peak, cum)
+            mdd := math.max(mdd, peak - cum)
+    btTxt = nT == 0 ? txt("Backtest de este gráfico: sin operaciones aún", "Backtest on this chart: no trades yet") : txt("Backtest de este gráfico", "Backtest on this chart") + (na(firstTrade) ? "" : txt(" (desde ", " (since ") + fmtT(firstTrade) + ")") + ": " + str.tostring(nT) + txt(" ops · acierto ", " trades · win rate ") + str.tostring(wins * 100.0 / nT, "#") + "% · " + fmtR(cum / nT) + txt("/op · PF ", "/trade · PF ") + (gl > 0 ? str.tostring(gp / gl, "#.##") : "∞") + " · " + txt("total ", "total ") + fmtR(cum) + " · DD " + str.tostring(mdd, "#.#") + "R"
+
+    // ─── Panel
+    if not na(tb)
+        table.delete(tb)
+        tb := na
+    if iTable
+        fg = chart.fg_color
+        tb := table.new(tblPos, 1, 7, bgcolor = color.new(chart.bg_color, 8), frame_color = color.new(fg, 70), frame_width = 1, border_color = color.new(fg, 88), border_width = 1)
+        table.cell(tb, 0, 0, txt("CICLOS + VOLATILIDAD · ", "CYCLES + VOLATILITY · ") + syminfo.ticker, text_color = fg, bgcolor = color.new(fg, 88), text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 1, sigTxt, text_color = sigCol, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 2, filtTxt, text_color = filtOk ? #26A69A : fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 3, txt("Ciclo (contexto): ", "Cycle (context): ") + cycTxt, text_color = cycState == 3 ? #26A69A : cycState == 2 ? #FFA726 : fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 4, na(hAvg) ? "Hurst: —" : "Hurst " + str.tostring(hAvg, "#.##") + " → " + (hAvg > 0.55 ? txt("persistente (tendencia)", "persistent (trend)") : hAvg < 0.45 ? txt("reversión a la media (rango)", "mean-reverting (range)") : txt("aleatorio", "random")), text_color = fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 5, btTxt, text_color = nT > 0 and cum > 0 ? #26A69A : nT > 0 ? #EF5350 : fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 6, txt("Referencia BTC 4h 2017–2026 (walk-forward): 52 ops · +2,0R/op · PF 7,7 · DD 3,8R. No es garantía de resultados futuros.", "Reference BTC 4h 2017–2026 (walk-forward): 52 trades · +2.0R/trade · PF 7.7 · DD 3.8R. Not a guarantee of future results."), text_color = color.new(fg, 40), text_size = size.small, text_halign = text.align_left)
+
+    // ─── Alertas dinámicas (idioma seleccionable)
+    tk = syminfo.ticker + " · "
+    if iAEntry and sigLong
+        alert(tk + txt("SEÑAL LARGA: entrar en la apertura · stop ", "LONG SIGNAL: enter at the open · stop ") + fmtPx(brkStop) + txt(" · salida: cierre < EMA", " · exit: close < EMA") + str.tostring(iExitLen), alert.freq_once_per_bar_close)
+    if iAExit and evExit
+        alert(tk + txt("SALIDA de la operación: ", "Trade EXIT: ") + fmtR(exitR), alert.freq_once_per_bar_close)
+    if iAComp and evCompStart
+        alert(tk + txt("Compresión de volatilidad: preparar la caja", "Volatility compression: prepare the box"), alert.freq_once_per_bar_close)
+    if iAComp and evRelease
+        alert(tk + txt("Liberación: esperar cierre > ", "Release: wait for a close > ") + fmtPx(armH) + (filtOk ? "" : txt(" (filtros aún no cumplen)", " (filters not met yet)")), alert.freq_once_per_bar_close)
+    if iACyc and fCycWin
+        alert(tk + txt("Entra la ventana del ciclo dominante", "Dominant cycle window starts"), alert.freq_once_per_bar_close)
+
+// ════════════════════════════════════════════════════════════════════════════
+//  Condiciones de alerta estáticas
+// ════════════════════════════════════════════════════════════════════════════
+alertcondition(sigLong, "Señal larga / Long signal", "Ciclos+Vol: señal larga / long signal")
+alertcondition(evExit, "Salida / Exit", "Ciclos+Vol: salida / exit")
+alertcondition(evRelease, "Liberación / Release", "Ciclos+Vol: liberación / release")
+alertcondition(evCompStart, "Compresión / Compression", "Ciclos+Vol: compresión / compression")
