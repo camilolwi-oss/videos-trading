@@ -11,6 +11,8 @@ Hace todos los cálculos de los dos, pero en el gráfico solo dibuja lo necesari
 
 Archivo: [`ciclos_volatilidad.pine`](ciclos_volatilidad.pine)
 
+**Guía paso a paso con imágenes (PDF):** [`Guia-Ciclos-Volatilidad.pdf`](Guia-Ciclos-Volatilidad.pdf). Las imágenes se generan con `guia/figuras.py` y el PDF con `guia/construir_pdf.py`.
+
 ---
 
 ## Instalación
@@ -125,7 +127,7 @@ Advertencias:
 
 - **Con textos en el idioma elegido** (recomendado): *Crear alerta → Ciclos+Vol → "Cualquier llamada
   a la función alert()"*. Envía mensajes como `BTCUSD · SEÑAL LARGA: entrar en la apertura · stop
-  61 246 · salida: cierre < EMA100`.
+  61246 · salida: cierre < EMA100`.
 - **Fijas**: *Señal larga*, *Salida*, *Liberación*, *Compresión* y *Agotamiento*, para quien
   prefiere elegir una sola.
 
