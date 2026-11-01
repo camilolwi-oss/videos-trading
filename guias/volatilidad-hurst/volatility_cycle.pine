@@ -411,25 +411,11 @@ if barstate.islast
 
     // ─── Estado actual
     recentBrk = not na(lastBrkBar) and bar_index - lastBrkBar <= iH
-    string stTxt = ""
-    color stCol = chart.fg_color
-    if inZone and comp
-        stTxt := txt("COMPRESIÓN", "COMPRESSION") + " · " + str.tostring(compLen) + txt(" barras", " bars") + (compRising ? txt(" · el ATR ya sube", " · ATR already rising") : "")
-        stCol := #9C6ADE
-    else if inZone
-        stTxt := txt("SALIENDO DE LA COMPRESIÓN", "LEAVING COMPRESSION")
-        stCol := #2E86C1
-    else if not na(armBar)
-        stTxt := txt("LIBERACIÓN: esperando ruptura de la caja", "RELEASE: waiting for a box breakout")
-        stCol := #2E86C1
-    else if vol >= iPeakThr
-        stTxt := txt("AGOTAMIENTO (volatilidad en máximos)", "EXHAUSTION (volatility at highs)")
-        stCol := #9C6ADE
-    else if vol >= 70
-        stTxt := txt("EXPANSIÓN", "EXPANSION")
-        stCol := #26C6DA
-    else
-        stTxt := txt("NORMAL", "NORMAL")
+    // Código de estado: 1 compresión · 2 saliendo · 3 liberación · 4 agotamiento · 5 expansión · 0 normal.
+    // El color se elige al final con una sola expresión (Pine no traduce bien reasignar colores en ramas).
+    stCode = inZone and comp ? 1 : inZone ? 2 : not na(armBar) ? 3 : vol >= iPeakThr ? 4 : vol >= 70 ? 5 : 0
+    stTxt = stCode == 1 ? txt("COMPRESIÓN", "COMPRESSION") + " · " + str.tostring(compLen) + txt(" barras", " bars") + (compRising ? txt(" · el ATR ya sube", " · ATR already rising") : "") : stCode == 2 ? txt("SALIENDO DE LA COMPRESIÓN", "LEAVING COMPRESSION") : stCode == 3 ? txt("LIBERACIÓN: esperando ruptura de la caja", "RELEASE: waiting for a box breakout") : stCode == 4 ? txt("AGOTAMIENTO (volatilidad en máximos)", "EXHAUSTION (volatility at highs)") : stCode == 5 ? txt("EXPANSIÓN", "EXPANSION") : txt("NORMAL", "NORMAL")
+    stCol = stCode == 1 or stCode == 4 ? #9C6ADE : stCode == 2 or stCode == 3 ? #2E86C1 : stCode == 5 ? #26C6DA : chart.fg_color
 
     // ─── Qué hacer
     string doTxt = ""
