@@ -18,6 +18,8 @@ indicator("Ciclos + Volatilidad · Cycles + Volatility", shorttitle = "Ciclos+Vo
 //  CONTEXTO (no filtra la señal; el backtest no mostró mejora significativa):
 //   · Motor de ciclos de tiempo: anclas automáticas, subdivisión 2/3/5, ciclo
 //     dominante y su próxima ventana de pivote (se calcula en la última barra).
+//   · Volatilidad: línea de ciclo (SMA90 del percentil del ATR28), agotamiento (≥ 90) y
+//     período dominante de esa línea (autocorrelación + senoide), de volatility_cycle.pine.
 //   · Exponente de Hurst (R/S): régimen tendencia / rango.
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -58,9 +60,13 @@ iR1      = input.string("Auto", "Madre → N1 / Master → L1", options = ["Auto
 iR2      = input.string("Auto", "N1 → N2 / L1 → L2", options = ["Auto", "2", "3"], group = G3)
 iR3      = input.string("Auto", "N2 → N3 / L2 → L3", options = ["Auto", "2", "3"], group = G3)
 
-// ───────────────────────────── 4 · Hurst ─────────────────────────────
-G4 = "4 · Exponente de Hurst / Hurst exponent"
-iHurst = input.bool(true, "Calcular / Compute", group = G4)
+// ───────────────────────────── 4 · Volatilidad y Hurst (contexto) ─────────────────────────────
+G4 = "4 · Ciclo de volatilidad y Hurst / Volatility cycle & Hurst"
+iCycAtr  = input.int(28, "ATR del ciclo de volatilidad / Volatility-cycle ATR", minval = 2, group = G4)
+iCycLen  = input.int(90, "Longitud del ciclo de volatilidad / Volatility-cycle length", minval = 5, maxval = 500, group = G4)
+iPeakThr = input.float(90.0, "Agotamiento: percentil ≥ / Exhaustion: percentile ≥", minval = 60.0, maxval = 100.0, group = G4)
+iProjWin = input.int(400, "Ventana para el período dominante / Window for the dominant period", minval = 100, maxval = 2000, group = G4, tooltip = "ES: período dominante de la línea de ciclo por autocorrelación y senoide ajustada a las dos últimas vueltas (estimación, no predicción).\nEN: dominant period of the cycle line by autocorrelation and a sine fitted to the last two turns (an estimate, not a prediction).")
+iHurst = input.bool(true, "Calcular Hurst / Compute Hurst", group = G4)
 iHLen  = input.int(100, "Ventana R/S / R/S window", minval = 32, maxval = 500, group = G4)
 iHAvg  = input.int(10, "Media / Average", minval = 1, maxval = 50, group = G4)
 iHBars = input.int(500, "Barras calculadas / Bars computed", minval = 50, maxval = 5000, group = G4)
@@ -71,6 +77,7 @@ iAEntry = input.bool(true, "Señal de entrada / Entry signal", group = G5)
 iAExit  = input.bool(true, "Salida / Exit", group = G5)
 iAComp  = input.bool(true, "Compresión y liberación / Compression & release", group = G5)
 iACyc   = input.bool(true, "Ventana de ciclo / Cycle window", group = G5)
+iAVol   = input.bool(false, "Agotamiento y ciclo de volatilidad cruza 50 / Exhaustion & volatility cycle crosses 50", group = G5)
 
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -679,6 +686,76 @@ fmtR(float r) => (r >= 0 ? "+" : "") + str.tostring(r, "#.##") + "R"
 fmtPx(float p) => str.tostring(p, format.mintick)
 ckm(bool b) => b ? "✓" : "✗"
 
+// Período dominante de la línea de ciclo de volatilidad (de volatility_cycle.pine):
+// autocorrelación tras el primer mínimo, luego senoide y = c + a·sen(ωj) + b·cos(ωj) ajustada por
+// mínimos cuadrados en las dos últimas vueltas. Devuelve [período, r, barras al próximo pico, barras al próximo valle].
+volCycProj(array<float> h) =>
+    int vpBest = na
+    float vpR = -2.0
+    int vpPk = na
+    int vpTr = na
+    vpN = h.size()
+    if vpN >= 80
+        vpM = h.avg()
+        bool vpPassed = false
+        float vpPrev = 1.0
+        for P = 8 to int(vpN / 2)
+            float num = 0.0
+            float d1 = 0.0
+            float d2 = 0.0
+            for j = P to vpN - 1
+                va = h.get(j) - vpM
+                vb = h.get(j - P) - vpM
+                num += va * vb
+                d1 += va * va
+                d2 += vb * vb
+            rr = d1 > 0 and d2 > 0 ? num / math.sqrt(d1 * d2) : 0.0
+            if not vpPassed and rr > vpPrev
+                vpPassed := true
+            if vpPassed and rr > vpR
+                vpR := rr
+                vpBest := P
+            vpPrev := rr
+        if not na(vpBest) and vpR > 0.2
+            vpL = math.min(vpN, 2 * vpBest)
+            vpW = 2.0 * math.pi / vpBest
+            float sss = 0.0
+            float scc = 0.0
+            float ssc = 0.0
+            float s1 = 0.0
+            float c1 = 0.0
+            float sy = 0.0
+            float cy = 0.0
+            float yy = 0.0
+            for j = 0 to vpL - 1
+                y = h.get(vpN - vpL + j)
+                sn = math.sin(vpW * j)
+                cs = math.cos(vpW * j)
+                sss += sn * sn
+                scc += cs * cs
+                ssc += sn * cs
+                s1 += sn
+                c1 += cs
+                sy += sn * y
+                cy += cs * y
+                yy += y
+            det = sss * (scc * vpL - c1 * c1) - ssc * (ssc * vpL - c1 * s1) + s1 * (ssc * c1 - scc * s1)
+            if math.abs(det) > 1e-9
+                ca = (sy * (scc * vpL - c1 * c1) - ssc * (cy * vpL - c1 * yy) + s1 * (cy * c1 - scc * yy)) / det
+                cb = (sss * (cy * vpL - c1 * yy) - sy * (ssc * vpL - c1 * s1) + s1 * (ssc * yy - cy * s1)) / det
+                float pkV = -1e18
+                float trV = 1e18
+                for k = 1 to vpBest
+                    jj = vpL - 1 + k
+                    yv = ca * math.sin(vpW * jj) + cb * math.cos(vpW * jj)
+                    if yv > pkV
+                        pkV := yv
+                        vpPk := k
+                    if yv < trV
+                        trV := yv
+                        vpTr := k
+    [vpBest, vpR, vpPk, vpTr]
+
 // ════════════════════════════════════════════════════════════════════════════
 //  Volatilidad, momentum y señal (barra a barra: no repinta)
 // ════════════════════════════════════════════════════════════════════════════
@@ -700,6 +777,18 @@ comp    = vol <= iCompThr
 xRel    = ta.crossover(vol, iRelThr)
 hi200   = ta.highest(high, 200)
 lo200   = ta.lowest(low, 200)
+
+// Ciclo de volatilidad (volatility_cycle.pine, modo "Compatible"): percentil de un ATR largo, suavizado.
+atrC   = ta.atr(iCycAtr)
+vcyc   = ta.sma(ta.percentrank(atrC, iRankLen), iCycLen)
+evPeak = ta.crossover(vol, iPeakThr)
+evVcUp = ta.crossover(vcyc, 50)
+evVcDn = ta.crossunder(vcyc, 50)
+var array<float> vcHist = array.new<float>()
+if not na(vcyc)
+    vcHist.push(vcyc)
+    if vcHist.size() > iProjWin
+        vcHist.shift()
 
 // Zona de compresión → liberación → caja → ruptura.
 var bool  inZone = false
@@ -875,6 +964,7 @@ if barstate.islast
 
     // ─── Ciclos de tiempo: ciclo dominante y su próxima ventana
     string cycTxt = txt("ciclos desactivados", "cycles off")
+    string cycTip = ""
     int cycState = 0
     if iCycles
         winF = iWin / 100.0
@@ -896,6 +986,13 @@ if barstate.islast
             hr = T.tested > 0 ? T.valid * 100.0 / T.tested : 0.0
             dl = lenDays(S, nx - wX - xL)
             stTxt = cycState == 3 ? txt("ZONA IDEAL", "IDEAL ZONE") : cycState == 2 ? txt("EN VENTANA", "IN WINDOW") : txt("faltan ", "in ") + fmtDays(math.max(dl, 0))
+            // Estadística de todos los niveles activos (en el tooltip del panel).
+            for i = 0 to LV.size() - 1
+                Lq = LV.get(i)
+                if Lq.on and Lq.len > 0
+                    hq = Lq.tested > 0 ? Lq.valid * 100.0 / Lq.tested : 0.0
+                    cycTip += (i == dom ? "★ " : "") + lvName(i) + " · " + cycNm(S, Lq) + " · " + txt("aciertos ", "hits ") + str.tostring(Lq.valid) + "/" + str.tostring(Lq.tested) + " (" + str.tostring(hq, "#") + "%) · " + txt("próx. ", "next ") + fmtT(timeOf(S, Lq.nextPx)) + (Lq.active ? txt(" · EN VENTANA", " · IN WINDOW") : "") + "\n"
+            cycTip += txt("★ = ciclo dominante. Contexto: no filtra la señal.", "★ = dominant cycle. Context: does not filter the signal.")
             cycTxt := cycNm(S, T) + " · " + txt("aciertos ", "hits ") + str.tostring(T.valid) + "/" + str.tostring(T.tested) + " (" + str.tostring(hr, "#") + "%) · " + txt("próx. pivote ", "next pivot ") + fmtT(timeOf(S, nx)) + " ±" + fmtDays(lenDays(S, wX)) + " · " + stTxt
             bandCol = cycState == 3 ? #26A69A : cycState == 2 ? #FFA726 : #808080
             cycBox := box.new(timeOf(S, nx - wX), hi200 * 1.01, timeOf(S, nx + wX), lo200 * 0.99, xloc = xloc.bar_time, border_width = 0, bgcolor = color.new(bandCol, cycState >= 2 ? 80 : 90))
@@ -908,8 +1005,17 @@ if barstate.islast
     curR = inPos ? (close - ePx) / eRisk : na
     sigTxt = stCode == 1 ? txt("EN OPERACIÓN desde ", "IN TRADE since ") + fmtT(eTime) + " · " + txt("entrada ", "entry ") + fmtPx(ePx) + " · stop " + fmtPx(sPx) + " · " + txt("sale si cierra < EMA", "exits on close < EMA") + str.tostring(iExitLen) + " (" + fmtPx(emaX) + ") · " + txt("ahora ", "now ") + fmtR(curR) : stCode == 2 ? txt("SEÑAL LARGA: entrar en la apertura · stop ", "LONG SIGNAL: enter at the open · stop ") + fmtPx(pendStop) : stCode == 3 ? txt("LIBERACIÓN: esperar cierre > ", "RELEASE: wait for a close > ") + fmtPx(armH) + txt(" (caja ", " (box ") + fmtPx(armL) + " – " + fmtPx(armH) + ")" : stCode == 4 ? txt("COMPRESIÓN ", "COMPRESSION ") + str.tostring(compLen) + txt(" barras · caja ", " bars · box ") + fmtPx(zL) + " – " + fmtPx(zH) : txt("ESPERAR: sin compresión de volatilidad", "WAIT: no volatility compression")
     sigCol = stCode == 1 or stCode == 2 ? #26A69A : stCode == 3 ? #2E86C1 : stCode == 4 ? #9C6ADE : chart.fg_color
-    filtTxt = txt("Filtros: tendencia (EMA", "Filters: trend (EMA") + str.tostring(iTrendLen) + ") " + ckm(trendOk) + " · momentum " + str.tostring(mom) + "/3 (EMA " + ckm(emaOk) + " ATR " + ckm(atrOk) + " Vol " + ckm(volOk) + ") · " + txt("volatilidad: percentil ", "volatility: percentile ") + str.tostring(vol, "#")
+    filtTxt = txt("Filtros: tendencia (EMA", "Filters: trend (EMA") + str.tostring(iTrendLen) + ") " + ckm(trendOk) + " · momentum " + str.tostring(mom) + "/3 (EMA " + ckm(emaOk) + " ATR " + ckm(atrOk) + " Vol " + ckm(volOk) + ")"
     filtOk = trendOk and mom >= iMomMin
+
+    // ─── Volatilidad (contexto): fase, línea de ciclo y su período dominante
+    [vpP, vpRr, vpPk, vpTr] = volCycProj(vcHist)
+    msBar = timeframe.in_seconds() * 1000.0
+    volPh = vol >= iPeakThr ? 3 : vol >= 70 ? 2 : vol <= iCompThr ? 1 : 0
+    volPhTxt = volPh == 3 ? txt("AGOTAMIENTO", "EXHAUSTION") : volPh == 2 ? txt("expansión", "expansion") : volPh == 1 ? txt("compresión", "compression") : txt("normal", "normal")
+    vcArrow = na(vcyc) or na(vcyc[1]) ? "" : vcyc > vcyc[1] ? " ↑" : " ↓"
+    volTxt = txt("Volatilidad: percentil ", "Volatility: percentile ") + str.tostring(vol, "#") + " (" + volPhTxt + ") · " + txt("ciclo ", "cycle ") + (na(vcyc) ? "—" : str.tostring(vcyc, "#") + vcArrow) + (na(vpP) or na(vpPk) ? "" : " · " + txt("ritmo ", "rhythm ") + (vpP >= int(vcHist.size() / 2) ? "≥ " : "≈ ") + str.tostring(vpP) + txt(" velas · pico ~", " bars · peak ~") + fmtT(int(time + vpPk * msBar)) + txt(" · valle ~", " · trough ~") + fmtT(int(time + vpTr * msBar)))
+    volTip = txt("Percentil del ATR(", "Percentile of ATR(") + str.tostring(iAtrLen) + txt(") en ", ") over ") + str.tostring(iRankLen) + txt(" velas: ≤ ", " bars: ≤ ") + str.tostring(iCompThr, "#") + txt(" compresión · ≥ 70 expansión · ≥ ", " compression · ≥ 70 expansion · ≥ ") + str.tostring(iPeakThr, "#") + txt(" agotamiento.\nCiclo = SMA", " exhaustion.\nCycle = SMA") + str.tostring(iCycLen) + txt(" del percentil del ATR(", " of the percentile of ATR(") + str.tostring(iCycAtr) + txt("); sobre 50 = volatilidad alta.", "); above 50 = high volatility.") + (na(vpP) ? "" : txt("\nRitmo: período dominante del ciclo por autocorrelación (r = ", "\nRhythm: dominant period of the cycle by autocorrelation (r = ") + str.tostring(vpRr, "#.##") + txt("); pico y valle de la senoide proyectada. Estimación, no predicción.", "); peak and trough of the projected sine. An estimate, not a prediction.")) + txt("\nContexto: en el backtest no mejoró la señal como filtro.", "\nContext: as a filter it did not improve the signal in the backtest.")
 
     // ─── Backtest de este gráfico
     nT = rArr.size()
@@ -936,14 +1042,15 @@ if barstate.islast
         tb := na
     if iTable
         fg = chart.fg_color
-        tb := table.new(tblPos, 1, 7, bgcolor = color.new(chart.bg_color, 8), frame_color = color.new(fg, 70), frame_width = 1, border_color = color.new(fg, 88), border_width = 1)
+        tb := table.new(tblPos, 1, 8, bgcolor = color.new(chart.bg_color, 8), frame_color = color.new(fg, 70), frame_width = 1, border_color = color.new(fg, 88), border_width = 1)
         table.cell(tb, 0, 0, txt("CICLOS + VOLATILIDAD · ", "CYCLES + VOLATILITY · ") + syminfo.ticker, text_color = fg, bgcolor = color.new(fg, 88), text_size = size.small, text_halign = text.align_left)
         table.cell(tb, 0, 1, sigTxt, text_color = sigCol, text_size = size.small, text_halign = text.align_left)
         table.cell(tb, 0, 2, filtTxt, text_color = filtOk ? #26A69A : fg, text_size = size.small, text_halign = text.align_left)
-        table.cell(tb, 0, 3, txt("Ciclo (contexto): ", "Cycle (context): ") + cycTxt, text_color = cycState == 3 ? #26A69A : cycState == 2 ? #FFA726 : fg, text_size = size.small, text_halign = text.align_left)
-        table.cell(tb, 0, 4, na(hAvg) ? "Hurst: —" : "Hurst " + str.tostring(hAvg, "#.##") + " → " + (hAvg > 0.55 ? txt("persistente (tendencia)", "persistent (trend)") : hAvg < 0.45 ? txt("reversión a la media (rango)", "mean-reverting (range)") : txt("aleatorio", "random")), text_color = fg, text_size = size.small, text_halign = text.align_left)
-        table.cell(tb, 0, 5, btTxt, text_color = nT > 0 and cum > 0 ? #26A69A : nT > 0 ? #EF5350 : fg, text_size = size.small, text_halign = text.align_left)
-        table.cell(tb, 0, 6, txt("Referencia BTC 4h 2017–2026 (walk-forward): 52 ops · +2,0R/op · PF 7,7 · DD 3,8R. No es garantía de resultados futuros.", "Reference BTC 4h 2017–2026 (walk-forward): 52 trades · +2.0R/trade · PF 7.7 · DD 3.8R. Not a guarantee of future results."), text_color = color.new(fg, 40), text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 3, txt("Ciclo (contexto): ", "Cycle (context): ") + cycTxt, text_color = cycState == 3 ? #26A69A : cycState == 2 ? #FFA726 : fg, text_size = size.small, text_halign = text.align_left, tooltip = cycTip)
+        table.cell(tb, 0, 4, volTxt, text_color = volPh == 3 ? #9C6ADE : fg, text_size = size.small, text_halign = text.align_left, tooltip = volTip)
+        table.cell(tb, 0, 5, na(hAvg) ? "Hurst: —" : "Hurst " + str.tostring(hAvg, "#.##") + " → " + (hAvg > 0.55 ? txt("persistente (tendencia)", "persistent (trend)") : hAvg < 0.45 ? txt("reversión a la media (rango)", "mean-reverting (range)") : txt("aleatorio", "random")), text_color = fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 6, btTxt, text_color = nT > 0 and cum > 0 ? #26A69A : nT > 0 ? #EF5350 : fg, text_size = size.small, text_halign = text.align_left)
+        table.cell(tb, 0, 7, txt("Referencia BTC 4h 2017–2026 (walk-forward): 52 ops · +2,0R/op · PF 7,7 · DD 3,8R. No es garantía de resultados futuros.", "Reference BTC 4h 2017–2026 (walk-forward): 52 trades · +2.0R/trade · PF 7.7 · DD 3.8R. Not a guarantee of future results."), text_color = color.new(fg, 40), text_size = size.small, text_halign = text.align_left)
 
     // ─── Alertas dinámicas (idioma seleccionable)
     tk = syminfo.ticker + " · "
@@ -957,6 +1064,10 @@ if barstate.islast
         alert(tk + txt("Liberación: esperar cierre > ", "Release: wait for a close > ") + fmtPx(armH) + (filtOk ? "" : txt(" (filtros aún no cumplen)", " (filters not met yet)")), alert.freq_once_per_bar_close)
     if iACyc and fCycWin
         alert(tk + txt("Entra la ventana del ciclo dominante", "Dominant cycle window starts"), alert.freq_once_per_bar_close)
+    if iAVol and evPeak
+        alert(tk + txt("Agotamiento: volatilidad en máximos (percentil ≥ ", "Exhaustion: volatility at highs (percentile ≥ ") + str.tostring(iPeakThr, "#") + ")", alert.freq_once_per_bar_close)
+    if iAVol and (evVcUp or evVcDn)
+        alert(tk + (evVcUp ? txt("El ciclo de volatilidad cruza 50 al alza", "Volatility cycle crosses above 50") : txt("El ciclo de volatilidad cruza 50 a la baja", "Volatility cycle crosses below 50")), alert.freq_once_per_bar_close)
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Condiciones de alerta estáticas
@@ -965,3 +1076,4 @@ alertcondition(sigLong, "Señal larga / Long signal", "Ciclos+Vol: señal larga 
 alertcondition(evExit, "Salida / Exit", "Ciclos+Vol: salida / exit")
 alertcondition(evRelease, "Liberación / Release", "Ciclos+Vol: liberación / release")
 alertcondition(evCompStart, "Compresión / Compression", "Ciclos+Vol: compresión / compression")
+alertcondition(evPeak, "Agotamiento / Exhaustion", "Ciclos+Vol: agotamiento de volatilidad / volatility exhaustion")

@@ -17,7 +17,7 @@ Archivo: [`ciclos_volatilidad.pine`](ciclos_volatilidad.pine)
 
 1. Abre el archivo en bruto:
    `https://raw.githubusercontent.com/camilolwi-oss/videos-trading/claude/friendly-rubin-kszpt5/guias/ciclos-volatilidad/ciclos_volatilidad.pine`
-2. Selecciona **todo** el texto y cópialo. Son unas 970 líneas: si pegas solo una parte,
+2. Selecciona **todo** el texto y cópialo. Son unas 1 080 líneas: si pegas solo una parte,
    TradingView da el error CE10246.
 3. En TradingView, abre el Pine Editor, crea un indicador nuevo, borra el contenido, pégalo y pulsa
    **Añadir al gráfico**.
@@ -40,17 +40,18 @@ Cuando la caja azul se resuelve sin señal cambia de color:
 - **roja**: rompió a la baja (sin operación; los cortos no dieron ventaja en el backtest);
 - **gris**: caducó sin romper.
 
-### El panel (7 filas)
+### El panel (8 filas)
 
 | Fila | Ejemplo |
 |---|---|
 | 1 · título | `CICLOS + VOLATILIDAD · BTCUSD` |
 | 2 · **qué hacer ahora** | `ESPERAR` · `COMPRESIÓN 14 barras · caja …` · `LIBERACIÓN: esperar cierre > …` · `SEÑAL LARGA: entrar en la apertura · stop …` · `EN OPERACIÓN … ahora +1,8R` |
-| 3 · filtros | `tendencia (EMA200) ✓ · momentum 2/3 (EMA ✓ ATR ✓ Vol ✗) · volatilidad: percentil 37`. Se pinta en verde si se cumplen. |
-| 4 · ciclo (contexto) | Ciclo dominante, aciertos del ciclo (p. ej. `7/9 (78 %)`), fecha del próximo pivote ± ventana y estado. |
-| 5 · Hurst | `Hurst 0,58 → persistente (tendencia)`, `reversión a la media (rango)` o `aleatorio` |
-| 6 · backtest del gráfico | Operaciones, acierto, R/op, PF, R total y peor racha en el símbolo y la temporalidad abiertos. Usa las mismas reglas que el backtest en Python. |
-| 7 · referencia | El resultado del walk-forward en BTC 4h, para comparar |
+| 3 · filtros | `tendencia (EMA200) ✓ · momentum 2/3 (EMA ✓ ATR ✓ Vol ✗)`. Se pinta en verde si se cumplen. |
+| 4 · ciclo (contexto) | Ciclo dominante, aciertos del ciclo (p. ej. `7/9 (78 %)`), fecha del próximo pivote ± ventana y estado.<br>**Pasa el ratón por encima** para ver la estadística de todos los niveles (Madre, N1, N2, N3): longitud, aciertos y próximo pivote. |
+| 5 · volatilidad (contexto) | `percentil 37 (normal) · ciclo 46 ↑ · ritmo ≈ 177 velas · pico ~… · valle ~…`.<br>La fase puede ser compresión (≤ 5), normal, expansión (≥ 70) o **AGOTAMIENTO** (≥ 90, en morado). El "ciclo" es la línea de ciclo de volatilidad y el "ritmo", su período dominante con el próximo pico y valle estimados. Si sale "≥", el período llegó al tope de la ventana y es poco fiable. |
+| 6 · Hurst | `Hurst 0,58 → persistente (tendencia)`, `reversión a la media (rango)` o `aleatorio` |
+| 7 · backtest del gráfico | Operaciones, acierto, R/op, PF, R total y peor racha en el símbolo y la temporalidad abiertos. Usa las mismas reglas que el backtest en Python. |
+| 8 · referencia | El resultado del walk-forward en BTC 4h, para comparar |
 
 ---
 
@@ -60,6 +61,7 @@ Cuando la caja azul se resuelve sin señal cambia de color:
 |---|---|
 | **Señal**: compresión → liberación → ruptura de la caja | **Filtro de momentum** (checklist de la guía): EMA20/50 apiladas y separándose · ATR subiendo · volumen creciente |
 | Percentil del ATR(14) en 100 velas, con los umbrales 5 y 20 | **Motor de ciclos completo**: anclas automáticas por prominencia, fusión de mínimos dobles, subdivisión 2/3/5, validación de pivotes y ciclo dominante. Se muestra como contexto. |
+| **Línea de ciclo de volatilidad** (SMA90 del percentil del ATR28), **agotamiento** (≥ 90) y **período dominante** de esa línea (autocorrelación + senoide). Están en el panel, sin dibujar. | **Estadística de pivotes por nivel**, en el tooltip de la fila de ciclo |
 | Exponente de Hurst (R/S), como lectura de régimen | Ventanas ±%, base de tiempo calendario o por barras, y textos en español e inglés |
 | Backtest en el gráfico y alertas | Panel de lectura simple, en la línea del modo "Simple" |
 
@@ -116,16 +118,16 @@ Advertencias:
 | 1 · General | Idioma, panel y su posición, mostrar la EMA200 |
 | 2 · Señal (validada) | ATR 14, percentil 100, compresión ≤ 5, liberación > 20, 12 velas para romper, EMA de tendencia 200, momentum mínimo 2, EMA de salida 100, salida por tiempo a las 180 velas, riesgo mínimo 0,5 ATR, comisión 0,1 % (solo para el backtest del gráfico) |
 | 3 · Ciclos de tiempo | Igual que en `time_cycles.pine`: barras del motor (5 000), ventana ±10 %, fuerza de pivote, candidatos, fusión de mínimos dobles, ciclo madre mínimo y relaciones Madre→N1→N2→N3 (Auto/2/3/5) |
-| 4 · Hurst | Ventana R/S de 100, media de 10 y número de barras calculadas (500) |
-| 5 · Alertas | Entrada, salida, compresión/liberación y entrada en la ventana del ciclo |
+| 4 · Ciclo de volatilidad y Hurst | ATR del ciclo (28), longitud del ciclo (90), umbral de agotamiento (90), ventana del período dominante (400 velas); Hurst: ventana R/S de 100, media de 10 y barras calculadas (500) |
+| 5 · Alertas | Entrada, salida, compresión/liberación, entrada en la ventana del ciclo y, desactivada por defecto, agotamiento / ciclo de volatilidad cruza 50 |
 
 ## Alertas
 
 - **Con textos en el idioma elegido** (recomendado): *Crear alerta → Ciclos+Vol → "Cualquier llamada
   a la función alert()"*. Envía mensajes como `BTCUSD · SEÑAL LARGA: entrar en la apertura · stop
   61 246 · salida: cierre < EMA100`.
-- **Fijas**: *Señal larga*, *Salida*, *Liberación* y *Compresión*, para quien prefiere elegir una
-  sola.
+- **Fijas**: *Señal larga*, *Salida*, *Liberación*, *Compresión* y *Agotamiento*, para quien
+  prefiere elegir una sola.
 
 ---
 
@@ -136,5 +138,8 @@ Advertencias:
   `time_cycles.pine`. La banda y la etiqueta del ciclo pueden moverse cuando aparecen pivotes
   nuevos; por eso no forman parte de la señal.
 - El exponente de Hurst se calcula solo en las últimas 500 velas para ahorrar tiempo de ejecución.
+- El período dominante del ciclo de volatilidad se recalcula en la última vela con las últimas 400
+  velas de la línea. Es una estimación (igual que la proyección de `volatility_cycle.pine`), no una
+  predicción. En el backtest, usar esa línea como filtro no mejoró la señal.
 - Si TradingView muestra un error de compilación, envía una captura con el mensaje y lo corrijo. El
   código se revisó con un parser de Pine v6, pero no se compiló dentro de TradingView.
